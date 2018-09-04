@@ -26,7 +26,7 @@ public class CmdArgs {
   }
 
   public Benchmark.Factory getBenchmarkFactory() {
-    return null;
+    return BenchmarkRegistry.REGISTRY.get(benchmark);
   }
 
   public Duration getDuration() {
