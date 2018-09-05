@@ -1,5 +1,7 @@
 package org.apache.bench;
 
+import org.apache.curator.framework.CuratorFramework;
+
 import java.util.List;
 
 public class QueueLockAndMutateBench extends AbstractBenchmark {
@@ -7,6 +9,16 @@ public class QueueLockAndMutateBench extends AbstractBenchmark {
 
   public QueueLockAndMutateBench(final CmdArgs config) {
     super(config);
+  }
+
+  @Override
+  protected void setup(CuratorFramework client) throws Exception {
+
+  }
+
+  @Override
+  protected void teardown(CuratorFramework client) throws Exception {
+
   }
 
   @Override

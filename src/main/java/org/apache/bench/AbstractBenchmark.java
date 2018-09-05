@@ -13,11 +13,11 @@ import org.apache.curator.retry.RetryNTimes;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 public abstract class AbstractBenchmark implements Benchmark {
   private final CmdArgs config;
@@ -26,8 +26,37 @@ public abstract class AbstractBenchmark implements Benchmark {
     this.config = Preconditions.checkNotNull(config);
   }
 
+  protected abstract void setup(CuratorFramework client) throws Exception;
+
+  protected abstract void teardown(CuratorFramework client) throws Exception;
+
   @Override
   public Result run() {
+
+    List<FailureResult> failures = Lists.newArrayList();
+    List<SuccessResult> successes = Lists.newArrayList();
+
+    final CuratorFramework setupClient = createClient(config);
+
+    try {
+      setupClient.start();
+      setup(setupClient);
+    } catch (Exception e) {
+      failures.add(new FailureResult("Failure during setup.", Lists.newArrayList(e)));
+    } finally {
+      if (setupClient != null) {
+        try {
+          setupClient.close();
+        } catch (Exception e) {
+          failures.add(new FailureResult("Failure during setup.", Lists.newArrayList(e)));
+        }
+      }
+    }
+
+    if (!failures.isEmpty()) {
+      return FailureResult.aggregate(failures);
+    }
+
     final ListeningExecutorService executorService = MoreExecutors.listeningDecorator(
       Executors.newFixedThreadPool(config.getNumClients()));
 
@@ -44,9 +73,6 @@ public abstract class AbstractBenchmark implements Benchmark {
 
     long endTime = System.currentTimeMillis() + config.getDurationInMillis();
     long currentTime;
-
-    List<FailureResult> failures = Lists.newArrayList();
-    List<SuccessResult> successes = Lists.newArrayList();
 
     while ((currentTime = System.currentTimeMillis()) < endTime) {
       long sleepTime = endTime - currentTime;
@@ -99,6 +125,23 @@ public abstract class AbstractBenchmark implements Benchmark {
       executorService.shutdownNow();
     }
 
+    final CuratorFramework teardownClient = createClient(config);
+
+    try {
+      teardownClient.start();
+      setup(teardownClient);
+    } catch (Exception e) {
+      failures.add(new FailureResult("Failure during teardown.", Lists.newArrayList(e)));
+    } finally {
+      if (teardownClient != null) {
+        try {
+          teardownClient.close();
+        } catch (Exception e) {
+          failures.add(new FailureResult("Failure during teardown.", Lists.newArrayList(e)));
+        }
+      }
+    }
+
     if (!failures.isEmpty()) {
       return FailureResult.aggregate(failures);
     }
@@ -106,7 +149,9 @@ public abstract class AbstractBenchmark implements Benchmark {
     return null;
   }
 
-  public abstract Task createTask(final CmdArgs cmdArgs);
+  protected abstract SuccessResult aggregateMetrics(List<SuccessResult> metrics);
+
+  protected abstract Task createTask(final CmdArgs cmdArgs);
 
   public static CuratorFramework createClient(final CmdArgs cmdArgs) {
     final RetryPolicy policy = new RetryNTimes(3, 10000);

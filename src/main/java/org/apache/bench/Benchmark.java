@@ -12,8 +12,6 @@ import java.util.concurrent.Callable;
 public interface Benchmark {
   Result run();
 
-  SuccessResult aggregateMetrics(List<SuccessResult> metrics);
-
   interface Task extends Callable<Result> {
     SuccessResult runTask(CuratorFramework client);
 
