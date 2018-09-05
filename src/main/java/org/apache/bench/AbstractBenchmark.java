@@ -73,8 +73,10 @@ public abstract class AbstractBenchmark implements Benchmark {
           switch (result.getType()) {
             case SUCCESS:
               successes.add((SuccessResult) result);
+              break;
             case FAILURE:
               failures.add((FailureResult) result);
+              break;
           }
         });
       }

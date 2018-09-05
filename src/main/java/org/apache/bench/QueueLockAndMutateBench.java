@@ -1,7 +1,6 @@
 package org.apache.bench;
 
 import java.util.List;
-import java.util.Map;
 
 public class QueueLockAndMutateBench extends AbstractBenchmark {
   public static final String NAME = "queueLockMutate";
