@@ -1,5 +1,8 @@
 package org.apache.bench;
 
+import java.util.List;
+import java.util.Map;
+
 public class QueueLockAndMutateBench extends AbstractBenchmark {
   public static final String NAME = "queueLockMutate";
 
@@ -8,8 +11,13 @@ public class QueueLockAndMutateBench extends AbstractBenchmark {
   }
 
   @Override
-  public void run() {
+  public Task createTask(CmdArgs cmdArgs) {
+    return null;
+  }
 
+  @Override
+  public Map<String, Double> aggregateMetrics(List<Map<String, Double>> metrics) {
+    return null;
   }
 
   public static class Factory implements Benchmark.Factory<QueueLockAndMutateBench> {

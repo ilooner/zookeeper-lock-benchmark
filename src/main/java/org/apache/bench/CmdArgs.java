@@ -29,7 +29,7 @@ public class CmdArgs {
     return BenchmarkRegistry.REGISTRY.get(benchmark);
   }
 
-  public Duration getDuration() {
-    return Duration.parse(duration);
+  public long getDurationInMillis() {
+    return Duration.parse(duration).getSeconds() * 1000L;
   }
 }

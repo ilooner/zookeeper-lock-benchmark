@@ -6,13 +6,18 @@ import org.apache.curator.framework.CuratorFramework;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 
 public interface Benchmark {
-  void run();
+  Result run();
+
+  Map<String, Double> aggregateMetrics(List<Map<String, Double>> metrics);
 
   interface Task extends Callable<Result> {
-    Map<String, Long> runTask(CuratorFramework client);
+    Map<String, Double> runTask(CuratorFramework client);
+
+    void terminate();
   }
 
   interface Factory<T extends Benchmark> {
@@ -29,9 +34,9 @@ public interface Benchmark {
   }
 
   class SuccessResult implements Result {
-    private final Map<String, Long> metrics;
+    private final Map<String, Double> metrics;
 
-    public SuccessResult(final Map<String, Long> metrics) {
+    public SuccessResult(final Map<String, Double> metrics) {
       this.metrics = Preconditions.checkNotNull(metrics);
     }
 
@@ -40,16 +45,28 @@ public interface Benchmark {
       return ResultType.SUCCESS;
     }
 
-    public Map<String, Long> getMetrics() {
+    public Map<String, Double> getMetrics() {
       return this.metrics;
     }
   }
 
   class FailureResult implements Result {
     private final List<Exception> exceptions;
+    private final String message;
+
+    public FailureResult(final String message, final List<Exception> exceptions) {
+      this.exceptions = Preconditions.checkNotNull(exceptions);
+      this.message = message;
+    }
 
     public FailureResult(final List<Exception> exceptions) {
       this.exceptions = Preconditions.checkNotNull(exceptions);
+      this.message = null;
+    }
+
+    public FailureResult(final String message) {
+      this.exceptions = Lists.newArrayList();
+      this.message = Preconditions.checkNotNull(message);
     }
 
     public FailureResult(final Exception... exceptions) {
@@ -63,6 +80,30 @@ public interface Benchmark {
 
     public List<Exception> getExceptions() {
       return exceptions;
+    }
+
+    public String getMessage() {
+      return message;
+    }
+
+    public static FailureResult aggregate(List<FailureResult> results) {
+      final StringBuilder sb = new StringBuilder();
+      final List<Exception> exceptions = Lists.newArrayList();
+
+      results.forEach(result -> {
+        Optional.ofNullable(result.getMessage()).ifPresent(
+          message -> sb.append(message).append("\n"));
+
+        exceptions.addAll(result.getExceptions());
+      });
+
+      String message = sb.toString();
+
+      if (message.isEmpty()) {
+        message = null;
+      }
+
+      return new FailureResult(message, exceptions);
     }
   }
 }
