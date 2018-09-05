@@ -96,6 +96,7 @@ public abstract class AbstractBenchmark implements Benchmark {
         Lists.newArrayList(e));
 
       failures.add(failureResult);
+      executorService.shutdownNow();
     }
 
     if (!failures.isEmpty()) {
