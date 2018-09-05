@@ -1,7 +1,6 @@
 package org.apache.bench;
 
 import java.util.List;
-import java.util.Map;
 
 public class LockAndMutateBench extends AbstractBenchmark {
   public static final String NAME = "lockMutate";
@@ -11,7 +10,7 @@ public class LockAndMutateBench extends AbstractBenchmark {
   }
 
   @Override
-  public Map<String, Double> aggregateMetrics(List<Map<String, Double>> metrics) {
+  public SuccessResult aggregateMetrics(List<SuccessResult> metrics) {
     return null;
   }
 

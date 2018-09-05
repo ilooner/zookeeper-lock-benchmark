@@ -100,7 +100,6 @@ public abstract class AbstractBenchmark implements Benchmark {
       return FailureResult.aggregate(failures);
     }
 
-    // Compute aggregate metrics
     return null;
   }
 
@@ -124,12 +123,12 @@ public abstract class AbstractBenchmark implements Benchmark {
     public Result call() throws Exception {
       CuratorFramework client = null;
       List<Exception> exceptionList = new ArrayList<>();
-      Map<String, Double> metrics = null;
+      SuccessResult result = null;
 
       try {
         client = createClient(cmdArgs);
         client.start();
-        metrics = runTask(client);
+        result = runTask(client);
       } catch (Exception ex) {
         exceptionList.add(ex);
       } finally {
@@ -142,14 +141,14 @@ public abstract class AbstractBenchmark implements Benchmark {
         }
       }
 
-      if (!exceptionList.isEmpty() || metrics == null) {
+      if (!exceptionList.isEmpty() || result == null) {
         return new FailureResult(exceptionList);
       } else {
-        return new SuccessResult(metrics);
+        return result;
       }
     }
 
-    public abstract Map<String, Double> runTask(CuratorFramework client);
+    public abstract SuccessResult runTask(CuratorFramework client);
 
     protected boolean isTerminated() {
       return terminated;

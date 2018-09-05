@@ -16,7 +16,7 @@ public class QueueLockAndMutateBench extends AbstractBenchmark {
   }
 
   @Override
-  public Map<String, Double> aggregateMetrics(List<Map<String, Double>> metrics) {
+  public SuccessResult aggregateMetrics(List<SuccessResult> metrics) {
     return null;
   }
 

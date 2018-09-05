@@ -12,10 +12,10 @@ import java.util.concurrent.Callable;
 public interface Benchmark {
   Result run();
 
-  Map<String, Double> aggregateMetrics(List<Map<String, Double>> metrics);
+  SuccessResult aggregateMetrics(List<SuccessResult> metrics);
 
   interface Task extends Callable<Result> {
-    Map<String, Double> runTask(CuratorFramework client);
+    SuccessResult runTask(CuratorFramework client);
 
     void terminate();
   }
