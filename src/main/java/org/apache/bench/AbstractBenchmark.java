@@ -144,7 +144,7 @@ public abstract class AbstractBenchmark implements Benchmark {
       return FailureResult.aggregate(failures);
     }
 
-    return null;
+    return aggregateMetrics(successes);
   }
 
   protected abstract SuccessResult aggregateMetrics(List<SuccessResult> metrics);
