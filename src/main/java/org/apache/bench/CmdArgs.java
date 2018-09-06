@@ -17,6 +17,10 @@ public class CmdArgs {
   @Parameter(names = { "--duration", "-d" }, description = "Duration of the benchmark in java.time.Duration format.")
   public String duration;
 
+  @Parameter(names = { "--throughputPerMs", "-t" }, description = "Required throughput per ms")
+  public long requiredThroughput;
+
+
   public String getConnectionString() {
     return connectionString;
   }
@@ -31,5 +35,9 @@ public class CmdArgs {
 
   public long getDurationInMillis() {
     return Duration.parse(duration).getSeconds() * 1000L;
+  }
+
+  public long getRequiredThrougput() {
+    return (requiredThroughput == 0) ? Long.MAX_VALUE : requiredThroughput;
   }
 }
