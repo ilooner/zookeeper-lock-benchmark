@@ -5,9 +5,5 @@ bin=`cd -P "$bin">/dev/null; pwd`
 home="$(dirname "$bin")"
 jars=$home"/jars/*"
 
-echo $bin
-echo $jars
-echo $home
-
 java -cp "$jars" org.apache.bench.Cmd $@
 

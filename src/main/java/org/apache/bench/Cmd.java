@@ -1,6 +1,7 @@
 package org.apache.bench;
 
 import com.beust.jcommander.JCommander;
+import com.beust.jcommander.ParameterException;
 import com.google.common.collect.Lists;
 
 import java.util.Collections;
@@ -10,11 +11,15 @@ public class Cmd {
   public static void main(String[] args) {
     final CmdArgs cmdArgs = new CmdArgs();
 
-    //Duration
-    JCommander.newBuilder()
+    JCommander instance = JCommander.newBuilder()
       .addObject(cmdArgs)
-      .build()
-      .parse(args);
+      .build();
+    try {
+      instance.parse(args);
+    } catch (ParameterException e) {
+      instance.usage();
+      System.exit(0);
+    }
 
     final Benchmark benchmark = cmdArgs.getBenchmarkFactory().create(cmdArgs);
     final Benchmark.Result result = benchmark.run();
