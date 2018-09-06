@@ -1,27 +1,29 @@
 package org.apache.bench;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class LockAndMutateBench extends AbstractBenchmark {
-  public static final String NUM_LOCK_ACQUIRES = "Number of lock acquires";
-  public static final String TIME_TO_ACQUIRE = "Time to acquire";
-  public static final String TIME_TO_RELEASE = "Time to release";
-
-  public static final String AVERAGE_TIME_TO_ACQUIRE = "Average time to acquire millis.";
-  public static final String AVERAGE_TIME_TO_RELEASE = "Average time to release millis.";
-
+  public static final String ACQUIRE_TASK_NAME = "LockAcquireTasks";
+  public static final String RELEASE_TASK_NAME = "LockReleaseTasks";
+  public static final String TRANSACTION_TASK_NAME = "TransactionTasks";
+  public static final TaskStatistics lockAcquireStats = new TaskStatistics(ACQUIRE_TASK_NAME);
+  public static final TaskStatistics lockReleaseStats = new TaskStatistics(RELEASE_TASK_NAME);
+  public static final TaskStatistics transactionStats = new TaskStatistics(TRANSACTION_TASK_NAME);
   public static final String NAME = "lockMutate";
 
   public static final String BASE_PATH = "org/apache/zookeeperbench/" + LockAndMutateBench.NAME;
   public static final String LOCK_PATH = BASE_PATH + "/lock";
+  public static final String BLOB_PATH_1 = BASE_PATH + "/blob1";
+  public static final String BLOB_PATH_2 = BASE_PATH + "/blob2";
 
   private LockAndMutateBench(final CmdArgs config) {
     super(config);
@@ -39,23 +41,27 @@ public class LockAndMutateBench extends AbstractBenchmark {
 
   @Override
   public SuccessResult aggregateMetrics(List<SuccessResult> results) {
-    Map<String, Double> aggregateMetrics = new HashMap<>();
+    Map<String, TaskStatistics> aggregateMetrics = new HashMap<>();
 
-    double numLockAcquires  = 0;
-    double totalTimeToAcquire = 0;
-    double totalTimeToRelease = 0;
+    TaskStatistics aggAcquireLockStats = new TaskStatistics(String.format("Aggregated-%s", ACQUIRE_TASK_NAME));
+    TaskStatistics aggReleaseLockStats = new TaskStatistics(String.format("Aggregated-%s", RELEASE_TASK_NAME));
+    TaskStatistics aggTransactionStats = new TaskStatistics(String.format("Aggregated-%s", TRANSACTION_TASK_NAME));
 
-    for (SuccessResult result: results) {
-      numLockAcquires += result.getMetrics().get(NUM_LOCK_ACQUIRES);
-      totalTimeToAcquire += result.getMetrics().get(TIME_TO_ACQUIRE);
-      totalTimeToRelease += result.getMetrics().get(TIME_TO_RELEASE);
-    }
+    aggAcquireLockStats = results.stream()
+      .map(result -> result.getMetrics().get(ACQUIRE_TASK_NAME))
+      .reduce(aggAcquireLockStats, TaskStatistics::addOtherStats);
 
-    double averageTimeToAcquire = totalTimeToAcquire / numLockAcquires;
-    double averageTimeToRelease = totalTimeToRelease / numLockAcquires;
+    aggReleaseLockStats = results.stream()
+      .map(result -> result.getMetrics().get(RELEASE_TASK_NAME))
+      .reduce(aggReleaseLockStats, TaskStatistics::addOtherStats);
 
-    aggregateMetrics.put(AVERAGE_TIME_TO_ACQUIRE, averageTimeToAcquire);
-    aggregateMetrics.put(AVERAGE_TIME_TO_RELEASE, averageTimeToRelease);
+    aggTransactionStats = results.stream()
+      .map(result -> result.getMetrics().get(TRANSACTION_TASK_NAME))
+      .reduce(aggTransactionStats, TaskStatistics::addOtherStats);
+
+    aggregateMetrics.put(aggAcquireLockStats.getName(), aggAcquireLockStats);
+    aggregateMetrics.put(aggReleaseLockStats.getName(), aggReleaseLockStats);
+    aggregateMetrics.put(aggTransactionStats.getName(), aggTransactionStats);
 
     return new SuccessResult(aggregateMetrics);
   }
@@ -73,43 +79,68 @@ public class LockAndMutateBench extends AbstractBenchmark {
   }
 
   public static class Task extends AbstractTask {
+
+    enum TaskType {
+      ACQUIRE,
+      RELEASE,
+      TRANSACTION
+    }
+
     public Task(CmdArgs cmdArgs) {
       super(cmdArgs);
     }
 
     @Override
     public Result runTask(CuratorFramework client) {
-      double numAcquires = 0;
       Stopwatch timeToAcquire = new Stopwatch();
       Stopwatch timeToRelease = new Stopwatch();
-      final Map<String, Double> metrics = new HashMap<>();
+      Stopwatch timeToTransact = new Stopwatch();
+
+      final Map<String, TaskStatistics> metrics = new HashMap<>();
 
       while (!isTerminated()) {
         InterProcessMutex mutex = new InterProcessMutex(client, LOCK_PATH);
 
-        try {
-          timeToAcquire.start();
-          mutex.acquire(5, TimeUnit.MINUTES);
-          timeToAcquire.start();
-          numAcquires++;
-        } catch (Exception e) {
-          return new FailureResult("Timedout acquiring lock.", Lists.newArrayList(e));
-        }
+        performTask(TaskType.ACQUIRE, timeToAcquire, lockAcquireStats, mutex, client);
+        performTask(TaskType.TRANSACTION, timeToTransact, transactionStats, mutex, client);
+        performTask(TaskType.RELEASE, timeToRelease, lockReleaseStats, mutex, client);
 
-        try {
-          timeToRelease.start();
-          mutex.release();
-          timeToRelease.stop();
-        } catch (Exception e) {
-          return new FailureResult("Failed releasing lock.", Lists.newArrayList(e));
-        }
+        final long totalThroughput = (long) (lockAcquireStats.getCurrentThroughput() +
+          lockReleaseStats.getCurrentThroughput() + transactionStats.getCurrentThroughput());
+        throttleIfRequired(totalThroughput);
       }
 
-      metrics.put(NUM_LOCK_ACQUIRES, numAcquires);
-      metrics.put(TIME_TO_ACQUIRE, (double) timeToAcquire.elapsed(TimeUnit.MILLISECONDS));
-      metrics.put(TIME_TO_RELEASE, (double) timeToRelease.elapsed(TimeUnit.MILLISECONDS));
+      metrics.put(lockAcquireStats.getName(), lockAcquireStats);
+      metrics.put(lockReleaseStats.getName(), lockReleaseStats);
+      metrics.put(transactionStats.getName(), transactionStats);
 
       return new SuccessResult(metrics);
+    }
+
+    private void performTask(TaskType taskType, Stopwatch taskTimer, TaskStatistics statistics,
+                             InterProcessMutex mutex, CuratorFramework client) {
+      try {
+        taskTimer.start();
+        if (taskType.equals(TaskType.ACQUIRE)) {
+          mutex.acquire(5, TimeUnit.MINUTES);
+        } else if (taskType.equals(TaskType.RELEASE)) {
+          mutex.release();
+        } else if (taskType.equals(TaskType.TRANSACTION)) {
+          Collection<CuratorTransactionResult> results = client.inTransaction()
+            .setData().forPath(BLOB_PATH_1, "test1".getBytes())
+            .and()
+            .setData().forPath(BLOB_PATH_2, "test2".getBytes())
+            .and()
+            .commit();
+        }
+        taskTimer.stop();
+        statistics.addSuccess(taskTimer.elapsed(TimeUnit.MILLISECONDS));
+      } catch (Exception e) {
+        statistics.addFailure();
+        //return new FailureResult("Failed releasing lock.", Lists.newArrayList(e));
+      } finally {
+        taskTimer.reset();
+      }
     }
   }
 }

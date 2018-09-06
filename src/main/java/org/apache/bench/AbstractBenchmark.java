@@ -17,7 +17,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 
 public abstract class AbstractBenchmark implements Benchmark {
   private final CmdArgs config;
@@ -48,7 +47,7 @@ public abstract class AbstractBenchmark implements Benchmark {
         try {
           setupClient.close();
         } catch (Exception e) {
-          failures.add(new FailureResult("Failure during setup.", Lists.newArrayList(e)));
+          failures.add(new FailureResult("Failure while closing curator framework.", Lists.newArrayList(e)));
         }
       }
     }
@@ -93,7 +92,8 @@ public abstract class AbstractBenchmark implements Benchmark {
       try {
         results = uberFuture.get(1, TimeUnit.MINUTES);
       } catch (InterruptedException | ExecutionException | TimeoutException e) {
-        failures.add(new FailureResult(Lists.newArrayList(e)));
+        failures.add(new FailureResult("Failed while waiting to get results of all tasks",
+          Lists.newArrayList(e)));
       }
 
       if (failures.isEmpty()) {
@@ -201,6 +201,17 @@ public abstract class AbstractBenchmark implements Benchmark {
     @Override
     public void terminate() {
       this.terminated = true;
+    }
+
+    @Override
+    public void throttleIfRequired(long currentTput) {
+      while (cmdArgs.getRequiredThrougput() < currentTput) {
+        try {
+          Thread.sleep(1);
+        } catch (InterruptedException ex) {
+          // ignore
+        }
+      }
     }
   }
 }
