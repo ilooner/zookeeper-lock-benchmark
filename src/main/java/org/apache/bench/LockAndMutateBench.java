@@ -20,7 +20,7 @@ public class LockAndMutateBench extends AbstractBenchmark {
   public static final TaskStatistics transactionStats = new TaskStatistics(TRANSACTION_TASK_NAME);
   public static final String NAME = "lockMutate";
 
-  public static final String BASE_PATH = "org/apache/zookeeperbench/" + LockAndMutateBench.NAME;
+  public static final String BASE_PATH = "/org/apache/zookeeperbench/" + LockAndMutateBench.NAME;
   public static final String LOCK_PATH = BASE_PATH + "/lock";
   public static final String BLOB_PATH_1 = BASE_PATH + "/blob1";
   public static final String BLOB_PATH_2 = BASE_PATH + "/blob2";
