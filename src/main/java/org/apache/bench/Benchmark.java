@@ -48,6 +48,13 @@ public interface Benchmark {
     public Map<String, TaskStatistics> getMetrics() {
       return this.metrics;
     }
+
+    @Override
+    public String toString() {
+      StringBuffer sb = new StringBuffer();
+      metrics.forEach((k, v) -> sb.append(k).append("\n").append(v).append("\n"));
+      return sb.toString();
+    }
   }
 
   class FailureResult implements Result {
@@ -116,6 +123,7 @@ public interface Benchmark {
    */
   class TaskStatistics {
     private final String name;
+    private String taskId;
 
     private double numSuccesses;
     private double numFailure;
@@ -123,8 +131,18 @@ public interface Benchmark {
     private double minSuccessRequestTimeInMs = Double.MAX_VALUE;
     private double totalTimeForAllTasks;
 
+    TaskStatistics(String name, int taskId) {
+      this.name = name;
+      this.taskId = Integer.toString(taskId);
+    }
+
+    /**
+     * Usually only used by aggregated results across tasks
+     * @param name
+     */
     TaskStatistics(String name) {
       this.name = name;
+      this.taskId = "";
     }
 
     public String getName() {
@@ -158,7 +176,7 @@ public interface Benchmark {
     public String toString() {
       StringBuffer sb = new StringBuffer();
       sb.append("================================================================\n");
-      sb.append(String.format("Final result for task type: %s\n", name));
+      sb.append(String.format("Final result for task type: %s and id: %s \n", name, taskId));
       sb.append(String.format("Count: Success: %s, Failure: %s\n", numSuccesses, numFailure));
       sb.append(String.format("Time: Total across resources(ms): %s, MaxRequestTime(ms): %s, " +
         "MinRequestTime(ms): %s,  Average Time(ms): %s\n", totalTimeForAllTasks, maxSuccessRequestTimeInMs,
@@ -169,6 +187,7 @@ public interface Benchmark {
     }
 
     public TaskStatistics addOtherStats(TaskStatistics other) {
+      this.taskId = this.taskId.concat(String.format(" -- %s", other.taskId));
       this.numSuccesses += other.numSuccesses;
       this.numFailure += other.numFailure;
       this.maxSuccessRequestTimeInMs = Math.max(this.maxSuccessRequestTimeInMs, other.maxSuccessRequestTimeInMs);

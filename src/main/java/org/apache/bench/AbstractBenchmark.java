@@ -65,7 +65,7 @@ public abstract class AbstractBenchmark implements Benchmark {
     List<ListenableFuture<Result>> futures = Lists.newArrayList();
 
     for (int taskCount = 0; taskCount < config.getNumClients(); taskCount++) {
-      final Task task = createTask(config);
+      final Task task = createTask(config, taskCount);
       final ListenableFuture<Result> future = executorService.submit(task);
 
       tasks.add(task);
@@ -146,6 +146,10 @@ public abstract class AbstractBenchmark implements Benchmark {
       return FailureResult.aggregate(failures);
     }
 
+    if (config.printVerbose()) {
+      successes.forEach(result -> System.out.println(result.toString()));
+    }
+
     return aggregateMetrics(successes);
   }
 
@@ -167,7 +171,7 @@ public abstract class AbstractBenchmark implements Benchmark {
     return new SuccessResult(aggMap);
   }
 
-  protected abstract Task createTask(final CmdArgs cmdArgs);
+  protected abstract Task createTask(final CmdArgs cmdArgs, int taskId);
 
   public static CuratorFramework createClient(final CmdArgs cmdArgs) {
     final RetryPolicy policy = new RetryNTimes(3, 10000);
@@ -178,9 +182,11 @@ public abstract class AbstractBenchmark implements Benchmark {
   public static abstract class AbstractTask implements Task {
     private final CmdArgs cmdArgs;
     private volatile boolean terminated = false;
+    protected int taskId;
 
-    public AbstractTask(final CmdArgs cmdArgs) {
+    public AbstractTask(final CmdArgs cmdArgs, int taskId) {
       this.cmdArgs = Preconditions.checkNotNull(cmdArgs);
+      this.taskId = taskId;
     }
 
     @Override
@@ -192,6 +198,7 @@ public abstract class AbstractBenchmark implements Benchmark {
       try {
         client = createClient(cmdArgs);
         client.start();
+        client.blockUntilConnected(1, TimeUnit.MINUTES);
         result = runTask(client);
       } catch (Exception ex) {
         exceptionList.add(ex);
@@ -206,7 +213,7 @@ public abstract class AbstractBenchmark implements Benchmark {
       }
 
       if (!exceptionList.isEmpty() || result == null) {
-        return new FailureResult(exceptionList);
+        return new FailureResult(String.format("Task with id: %d failed", taskId), exceptionList);
       } else {
         return result;
       }
@@ -230,6 +237,10 @@ public abstract class AbstractBenchmark implements Benchmark {
           // ignore
         }
       }
+    }
+
+    protected boolean isTransactionDisabled() {
+      return cmdArgs.isTransactionsDisabled();
     }
   }
 }

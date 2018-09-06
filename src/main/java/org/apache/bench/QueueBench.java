@@ -27,7 +27,7 @@ public class QueueBench extends AbstractBenchmark {
   }
 
   @Override
-  public Task createTask(CmdArgs cmdArgs) {
+  public Task createTask(CmdArgs cmdArgs, int taskId) {
     return null;
   }
 

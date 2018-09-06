@@ -28,6 +28,12 @@ public class CmdArgs {
     description = "Required throughput per ms")
   public long requiredThroughput;
 
+  @Parameter(names = { "--noTransaction", "-x" }, description = "Run acquire/release test with no transaction request")
+  public boolean noTransaction;
+
+  @Parameter(names = { "--verbose", "-v" }, description = "Print verbose result data for each client results along " +
+    "with aggregate")
+  public boolean verbose;
 
   public String getConnectionString() {
     return connectionString;
@@ -47,5 +53,13 @@ public class CmdArgs {
 
   public long getRequiredThrougput() {
     return (requiredThroughput == 0) ? Long.MAX_VALUE : requiredThroughput;
+  }
+
+  public boolean isTransactionsDisabled() {
+    return noTransaction;
+  }
+
+  public boolean printVerbose() {
+    return verbose;
   }
 }

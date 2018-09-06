@@ -15,9 +15,6 @@ public class LockAndMutateBench extends AbstractBenchmark {
   public static final String ACQUIRE_TASK_NAME = "LockAcquireTasks";
   public static final String RELEASE_TASK_NAME = "LockReleaseTasks";
   public static final String TRANSACTION_TASK_NAME = "TransactionTasks";
-  public static final TaskStatistics lockAcquireStats = new TaskStatistics(ACQUIRE_TASK_NAME);
-  public static final TaskStatistics lockReleaseStats = new TaskStatistics(RELEASE_TASK_NAME);
-  public static final TaskStatistics transactionStats = new TaskStatistics(TRANSACTION_TASK_NAME);
   public static final String NAME = "lockMutate";
 
   public static final String BASE_PATH = "/org/apache/zookeeperbench/" + LockAndMutateBench.NAME;
@@ -67,8 +64,8 @@ public class LockAndMutateBench extends AbstractBenchmark {
   }
 
   @Override
-  public Task createTask(CmdArgs cmdArgs) {
-    return new Task(cmdArgs);
+  public Task createTask(CmdArgs cmdArgs, int taskId) {
+    return new Task(cmdArgs, taskId);
   }
 
   public static class Factory implements Benchmark.Factory<LockAndMutateBench> {
@@ -86,8 +83,8 @@ public class LockAndMutateBench extends AbstractBenchmark {
       TRANSACTION
     }
 
-    public Task(CmdArgs cmdArgs) {
-      super(cmdArgs);
+    public Task(CmdArgs cmdArgs, int taskId) {
+      super(cmdArgs, taskId);
     }
 
     @Override
@@ -96,13 +93,19 @@ public class LockAndMutateBench extends AbstractBenchmark {
       Stopwatch timeToRelease = new Stopwatch();
       Stopwatch timeToTransact = new Stopwatch();
 
+      final TaskStatistics lockAcquireStats = new TaskStatistics(ACQUIRE_TASK_NAME, taskId);
+      final TaskStatistics lockReleaseStats = new TaskStatistics(RELEASE_TASK_NAME, taskId);
+      final TaskStatistics transactionStats = new TaskStatistics(TRANSACTION_TASK_NAME, taskId);
+
       final Map<String, TaskStatistics> metrics = new HashMap<>();
 
       while (!isTerminated()) {
         InterProcessMutex mutex = new InterProcessMutex(client, LOCK_PATH);
 
         performTask(TaskType.ACQUIRE, timeToAcquire, lockAcquireStats, mutex, client);
-        performTask(TaskType.TRANSACTION, timeToTransact, transactionStats, mutex, client);
+        if (!isTransactionDisabled()) {
+          performTask(TaskType.TRANSACTION, timeToTransact, transactionStats, mutex, client);
+        }
         performTask(TaskType.RELEASE, timeToRelease, lockReleaseStats, mutex, client);
 
         final long totalThroughput = (long) (lockAcquireStats.getCurrentThroughput() +
