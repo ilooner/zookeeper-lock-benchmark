@@ -84,6 +84,8 @@ public abstract class AbstractBenchmark implements Benchmark {
       }
     }
 
+    tasks.forEach(task -> task.terminate());
+
     if (failures.isEmpty()) {
       ListenableFuture<List<Result>> uberFuture = Futures.allAsList(futures);
       List<Result> results = null;
@@ -106,10 +108,6 @@ public abstract class AbstractBenchmark implements Benchmark {
           }
         });
       }
-    }
-
-    if (!failures.isEmpty()) {
-      tasks.forEach(task -> task.terminate());
     }
 
     executorService.shutdown();
@@ -171,7 +169,7 @@ public abstract class AbstractBenchmark implements Benchmark {
     public Result call() throws Exception {
       CuratorFramework client = null;
       List<Exception> exceptionList = new ArrayList<>();
-      SuccessResult result = null;
+      Result result = null;
 
       try {
         client = createClient(cmdArgs);
@@ -195,8 +193,6 @@ public abstract class AbstractBenchmark implements Benchmark {
         return result;
       }
     }
-
-    public abstract SuccessResult runTask(CuratorFramework client);
 
     protected boolean isTerminated() {
       return terminated;

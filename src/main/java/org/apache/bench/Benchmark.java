@@ -13,7 +13,7 @@ public interface Benchmark {
   Result run();
 
   interface Task extends Callable<Result> {
-    SuccessResult runTask(CuratorFramework client);
+    Result runTask(CuratorFramework client);
 
     void terminate();
   }
