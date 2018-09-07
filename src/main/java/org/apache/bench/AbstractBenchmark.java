@@ -129,7 +129,7 @@ public abstract class AbstractBenchmark implements Benchmark {
 
     try {
       teardownClient.start();
-      setup(teardownClient);
+      teardown(teardownClient);
     } catch (Exception e) {
       failures.add(new FailureResult("Failure during teardown.", Lists.newArrayList(e)));
     } finally {

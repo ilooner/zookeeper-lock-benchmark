@@ -28,12 +28,24 @@ public class LockAndMutateBench extends AbstractBenchmark {
 
   @Override
   protected void setup(CuratorFramework client) throws Exception {
+    if (client.checkExists().forPath(BLOB_PATH_1) == null) {
+      client.create().creatingParentsIfNeeded().forPath(BLOB_PATH_1);
+    }
 
+    if (client.checkExists().forPath(BLOB_PATH_2) == null) {
+      client.create().creatingParentsIfNeeded().forPath(BLOB_PATH_2);
+    }
   }
 
   @Override
   protected void teardown(CuratorFramework client) throws Exception {
+    if (client.checkExists().forPath(BLOB_PATH_1) == null) {
+      client.delete().forPath(BLOB_PATH_1);
+    }
 
+    if (client.checkExists().forPath(BLOB_PATH_2) == null) {
+      client.delete().forPath(BLOB_PATH_2);
+    }
   }
 
   @Override
