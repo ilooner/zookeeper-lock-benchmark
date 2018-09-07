@@ -24,7 +24,7 @@ public class CmdArgs {
     description = "Duration of the benchmark in java.time.Duration format.")
   public String duration;
 
-  @Parameter(names = { "--throughputPerMs", "-t" }, required = true, validateWith = NonNegativeLongValidator.class,
+  @Parameter(names = { "--throughputPerMs", "-t" }, validateWith = NonNegativeLongValidator.class,
     description = "Required throughput per ms")
   public long requiredThroughput;
 

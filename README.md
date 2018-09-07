@@ -25,7 +25,7 @@ Start zookeeper in docker
 Run the tool
 
 ```
-./target/zookeeper-bench-1.0-SNAPSHOT/zookeeper-bench-1.0-SNAPSHOT/bin/bench.sh -b lockMutate --connection '127.0.0.1:2181' -d PT60S -n 1 -t 0
+./target/zookeeper-bench-1.0-SNAPSHOT/zookeeper-bench-1.0-SNAPSHOT/bin/bench.sh -b lockMutate --connection '127.0.0.1:2181' -d PT60S -n 1
 ```
 
 ## Distribution
