@@ -17,6 +17,8 @@
  */
 package org.apache.bench;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -44,13 +46,22 @@ public class ResourceData extends AbstractBlobData {
   public void generate() {
     super.generate();
     final String baseIp = "10.10.10.";
+    final long baseMemory = 1024 * 1024;
     for (int i = 0; i < nodeCount; ++i) {
-      final String nodeIp = String.format("%s%d", baseIp, i+1);
+      long nodeNum = i+1;
+      final String nodeIp = String.format("%s%d", baseIp, nodeNum);
       final List<ResourceDataDef> freeInUseList = new ArrayList<>(2);
-      freeInUseList.add(new ResourceDataDef());
-      freeInUseList.add(new ResourceDataDef());
+      long memory = baseMemory * nodeNum;
+      freeInUseList.add(new ResourceDataDef(memory, nodeNum));
+      freeInUseList.add(new ResourceDataDef(memory, nodeNum));
       nodeFreeUsedResource.put(nodeIp, freeInUseList);
     }
+  }
+
+  // only used for testing
+  @VisibleForTesting
+  public Map<String, List<ResourceDataDef>> getOriginalData() {
+    return nodeFreeUsedResource;
   }
 
   @Override
@@ -63,13 +74,48 @@ public class ResourceData extends AbstractBlobData {
     return super.getDataAsByteArray(nodeFreeUsedResource);
   }
 
-  private static class ResourceDataDef implements Serializable {
+  public static class ResourceDataDef implements Serializable {
     private static final long serialVersionUID = -2936738468120447869L;
 
     // 30GB
-    private final long MEMORY_IN_KB = 31457280;
+    private final long totalMemoryInKB;
 
     // 10 Cores
-    private final long CPU = 10;
+    private final long totalCpu;
+
+    ResourceDataDef(long memory, long cpu) {
+      totalMemoryInKB = memory;
+      totalCpu = cpu;
+    }
+
+    public long getMemory() {
+      return totalMemoryInKB;
+    }
+
+    public long getCpu() {
+      return totalCpu;
+    }
+
+    @Override
+    public String toString() {
+      return String.format("Total_Memory_KB: %d, Total_CPU: %d", totalMemoryInKB, totalCpu);
+    }
+
+    @Override
+    public int hashCode() {
+      int assignedPrime = 17;
+      assignedPrime = 31 * assignedPrime + Long.valueOf(totalMemoryInKB).hashCode();
+      assignedPrime = 31 * assignedPrime + Long.valueOf(totalCpu).hashCode();
+      return assignedPrime;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return (obj == this) || ((obj instanceof ResourceDataDef) && equals((ResourceDataDef)obj));
+    }
+
+    private boolean equals(ResourceDataDef obj) {
+      return (this.totalMemoryInKB == obj.getMemory() && this.totalCpu == obj.getCpu());
+    }
   }
 }

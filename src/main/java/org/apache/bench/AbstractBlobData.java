@@ -45,9 +45,8 @@ public abstract class AbstractBlobData implements BlobData {
 
   protected byte[] getDataAsByteArray(Object inputData) throws IOException {
     Preconditions.checkState(isDataGenerated, "Please generate the data before getting it");
-    try {
-      final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
-      final ObjectOutputStream objOut = new ObjectOutputStream(byteOut);
+    try(final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+        final ObjectOutputStream objOut = new ObjectOutputStream(byteOut)) {
       objOut.writeObject(inputData);
       return byteOut.toByteArray();
     } catch (Exception ex) {
