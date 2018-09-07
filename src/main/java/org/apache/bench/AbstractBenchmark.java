@@ -12,7 +12,9 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -147,7 +149,23 @@ public abstract class AbstractBenchmark implements Benchmark {
     return aggregateMetrics(successes);
   }
 
-  protected abstract SuccessResult aggregateMetrics(List<SuccessResult> metrics);
+  protected SuccessResult aggregateMetrics(List<SuccessResult> metrics) {
+    Preconditions.checkArgument(!metrics.isEmpty());
+
+    Map<String, TaskStatistics> aggMap = new HashMap<>();
+
+    for (String key: metrics.get(0).getMetrics().keySet()) {
+      aggMap.put(key, new TaskStatistics(String.format("Aggregated-%s", key)));
+    }
+
+    for (SuccessResult result: metrics) {
+      for (Map.Entry<String, TaskStatistics> entry: result.getMetrics().entrySet()) {
+        aggMap.get(entry.getKey()).addOtherStats(entry.getValue());
+      }
+    }
+
+    return new SuccessResult(aggMap);
+  }
 
   protected abstract Task createTask(final CmdArgs cmdArgs);
 

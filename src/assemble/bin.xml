@@ -17,6 +17,7 @@
     <dependencySet>
       <excludes>
         <exclude>junit:*</exclude>
+        <exclude>org.apache.curator:curator-test</exclude>
       </excludes>
       <outputDirectory>jars/</outputDirectory>
       <useProjectArtifact>true</useProjectArtifact>

@@ -136,6 +136,10 @@ public interface Benchmark {
       updateTimes(requestTime);
     }
 
+    public double getSuccess() {
+      return numSuccesses;
+    }
+
     public void addFailure() {
       ++numFailure;
     }
