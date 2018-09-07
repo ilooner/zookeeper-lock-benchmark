@@ -31,6 +31,10 @@ public class CmdArgs {
   @Parameter(names = { "--noTransaction", "-x" }, description = "Run acquire/release test with no transaction request")
   public boolean noTransaction;
 
+  @Parameter(names = { "--nodeCount", "-s" }, validateWith = PositiveIntegerValidator.class, description = "Number of" +
+    " nodes to generate data for. Default is 100.")
+  public int nodeCount;
+
   @Parameter(names = { "--verbose", "-v" }, description = "Print verbose result data for each client results along " +
     "with aggregate")
   public boolean verbose;
@@ -61,5 +65,9 @@ public class CmdArgs {
 
   public boolean printVerbose() {
     return verbose;
+  }
+
+  public int getNodeCount() {
+    return nodeCount;
   }
 }

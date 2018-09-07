@@ -22,18 +22,39 @@ public class LockAndMutateBench extends AbstractBenchmark {
   public static final String BLOB_PATH_1 = BASE_PATH + "/blob1";
   public static final String BLOB_PATH_2 = BASE_PATH + "/blob2";
 
+  public static byte[] blob1Data;
+  public static byte[] blob2Data;
+
   private LockAndMutateBench(final CmdArgs config) {
     super(config);
   }
 
   @Override
   protected void setup(CuratorFramework client) throws Exception {
+
+    // For blob1 the data is for leaf resource pool. So keeping the resource pool count to 2
+    final BlobData blob1 = new ResourceData(2);
+    blob1.generate();
+    blob1Data = blob1.getDataAsByteArray();
+
+    // For blob2 the data is for cluster wide node resource pool
+    int configNodeCount = config.getNodeCount();
+    configNodeCount = (configNodeCount == 0) ? ResourceData.DEFAULT_NODE_COUNT : configNodeCount;
+    final BlobData blob2 = new ResourceData(configNodeCount);
+    blob2.generate();
+    blob2Data = blob2.getDataAsByteArray();
+
+    if (config.printVerbose()) {
+      System.out.println("Size of blob1 data: " + (blob1Data.length / 1024.0) + "KB");
+      System.out.println("Size of blob2 data: " + (blob2Data.length / 1024.0) + "KB");
+    }
+
     if (client.checkExists().forPath(BLOB_PATH_1) == null) {
-      client.create().creatingParentsIfNeeded().forPath(BLOB_PATH_1);
+      client.create().creatingParentsIfNeeded().forPath(BLOB_PATH_1, blob1Data);
     }
 
     if (client.checkExists().forPath(BLOB_PATH_2) == null) {
-      client.create().creatingParentsIfNeeded().forPath(BLOB_PATH_2);
+      client.create().creatingParentsIfNeeded().forPath(BLOB_PATH_2, blob2Data);
     }
   }
 
@@ -141,10 +162,16 @@ public class LockAndMutateBench extends AbstractBenchmark {
         } else if (taskType.equals(TaskType.RELEASE)) {
           mutex.release();
         } else if (taskType.equals(TaskType.TRANSACTION)) {
+          // Currently just a stub
+          client.getData().forPath(BLOB_PATH_1);
+          client.getData().forPath(BLOB_PATH_2);
+
+          // TODO: Determine how to get sleep time - random ?
+
           Collection<CuratorTransactionResult> results = client.inTransaction()
-            .setData().forPath(BLOB_PATH_1, "test1".getBytes())
+            .setData().forPath(BLOB_PATH_1, blob1Data)
             .and()
-            .setData().forPath(BLOB_PATH_2, "test2".getBytes())
+            .setData().forPath(BLOB_PATH_2, blob2Data)
             .and()
             .commit();
         }

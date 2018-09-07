@@ -18,6 +18,7 @@
 package org.apache.bench;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +27,7 @@ import java.util.Map;
 public class ResourceData extends AbstractBlobData {
   //private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ResourceData.class);
 
-  private static final int DEFAULT_NODE_COUNT = 100;
+  public static final int DEFAULT_NODE_COUNT = 100;
   private int nodeCount;
   private Map<String, List<ResourceDataDef>> nodeFreeUsedResource;
 
@@ -62,11 +63,13 @@ public class ResourceData extends AbstractBlobData {
     return super.getDataAsByteArray(nodeFreeUsedResource);
   }
 
-  static class ResourceDataDef {
+  private static class ResourceDataDef implements Serializable {
+    private static final long serialVersionUID = -2936738468120447869L;
+
     // 30GB
-    private static final long MEMORY_IN_KB = 31457280;
+    private final long MEMORY_IN_KB = 31457280;
 
     // 10 Cores
-    private static final long CPU = 10;
+    private final long CPU = 10;
   }
 }

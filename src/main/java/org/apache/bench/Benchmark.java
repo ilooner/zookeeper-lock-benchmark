@@ -192,7 +192,8 @@ public interface Benchmark {
       this.numFailure += other.numFailure;
       this.maxSuccessRequestTimeInMs = Math.max(this.maxSuccessRequestTimeInMs, other.maxSuccessRequestTimeInMs);
       this.minSuccessRequestTimeInMs = Math.min(this.minSuccessRequestTimeInMs, other.minSuccessRequestTimeInMs);
-      this.totalTimeForAllTasks += other.totalTimeForAllTasks;
+      // Take the max out of all the stats since all tasks were executed in parallel
+      this.totalTimeForAllTasks = Math.max(this.totalTimeForAllTasks, other.totalTimeForAllTasks);
       return this;
     }
   }

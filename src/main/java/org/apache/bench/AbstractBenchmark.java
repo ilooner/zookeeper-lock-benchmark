@@ -19,9 +19,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Lock;
 
 public abstract class AbstractBenchmark implements Benchmark {
-  private final CmdArgs config;
+  protected final CmdArgs config;
 
   public AbstractBenchmark(final CmdArgs config) {
     this.config = Preconditions.checkNotNull(config);
