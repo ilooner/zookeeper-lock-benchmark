@@ -17,6 +17,12 @@ public class Cmd {
     try {
       instance.parse(args);
     } catch (ParameterException e) {
+      if (e.getMessage() != null) {
+        System.err.println(e.getMessage());
+      }
+
+      System.out.println("\n\n");
+
       instance.usage();
       System.exit(0);
     }
