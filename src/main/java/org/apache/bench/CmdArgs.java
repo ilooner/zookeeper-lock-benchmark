@@ -42,12 +42,12 @@ public class CmdArgs {
 
   @Parameter(names = { "--minSleepTimeMs", "-mt" }, description = "Minimum sleep time to mimic computation during " +
     "transaction lock. A time between minSleepTimeMs and maxSleepTimeMs is chosen.",
-    validateWith = PositiveIntegerValidator.class)
+    validateWith = NonNegativeLongValidator.class)
   public int minSleepTimeInMs = 10;
 
   @Parameter(names = { "--maxSleepTimeMs", "-Mt" }, description = "Minimum sleep time to mimic computation during " +
     "transaction lock. A time between minSleepTimeMs and maxSleepTimeMs is chosen.",
-    validateWith = PositiveIntegerValidator.class)
+    validateWith = NonNegativeLongValidator.class)
   public int maxSleepTimeInMs = 500;
 
   public String getConnectionString() {
