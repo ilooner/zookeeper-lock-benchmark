@@ -15,30 +15,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.bench;
-
-import com.google.common.annotations.VisibleForTesting;
+package org.apache.bench.ZKBlobDataGen;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ResourceData extends AbstractBlobData {
-  //private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ResourceData.class);
+import static org.apache.bench.ZKBlobDataGen.DataDefConstants.DEFAULT_NODE_COUNT;
 
-  public static final int DEFAULT_NODE_COUNT = 100;
+public class NodeFreeUsedResourceData extends AbstractBlobData {
   private int nodeCount;
   private Map<String, List<ResourceDataDef>> nodeFreeUsedResource;
 
-  ResourceData(int nodeCount) {
+  public NodeFreeUsedResourceData(int nodeCount) {
     this.nodeCount = nodeCount;
     nodeFreeUsedResource = new HashMap<>(nodeCount);
   }
 
-  ResourceData() {
+  public NodeFreeUsedResourceData() {
     this(DEFAULT_NODE_COUNT);
   }
 
@@ -59,7 +55,7 @@ public class ResourceData extends AbstractBlobData {
   }
 
   // only used for testing
-  @VisibleForTesting
+  @Override
   public Map<String, List<ResourceDataDef>> getOriginalData() {
     return nodeFreeUsedResource;
   }
@@ -67,55 +63,10 @@ public class ResourceData extends AbstractBlobData {
   @Override
   public void generate(long sizeInKB) {
     //super.generate(sizeInKB);
-    throw new UnsupportedOperationException("Currently this operation is not supported in ResourceData");
+    throw new UnsupportedOperationException("Currently this operation is not supported in NodeFreeUsedResourceData");
   }
 
   public byte[] getDataAsByteArray() throws IOException {
     return super.getDataAsByteArray(nodeFreeUsedResource);
-  }
-
-  public static class ResourceDataDef implements Serializable {
-    private static final long serialVersionUID = -2936738468120447869L;
-
-    // 30GB
-    private final long totalMemoryInKB;
-
-    // 10 Cores
-    private final long totalCpu;
-
-    ResourceDataDef(long memory, long cpu) {
-      totalMemoryInKB = memory;
-      totalCpu = cpu;
-    }
-
-    public long getMemory() {
-      return totalMemoryInKB;
-    }
-
-    public long getCpu() {
-      return totalCpu;
-    }
-
-    @Override
-    public String toString() {
-      return String.format("Total_Memory_KB: %d, Total_CPU: %d", totalMemoryInKB, totalCpu);
-    }
-
-    @Override
-    public int hashCode() {
-      int assignedPrime = 17;
-      assignedPrime = 31 * assignedPrime + Long.valueOf(totalMemoryInKB).hashCode();
-      assignedPrime = 31 * assignedPrime + Long.valueOf(totalCpu).hashCode();
-      return assignedPrime;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      return (obj == this) || ((obj instanceof ResourceDataDef) && equals((ResourceDataDef)obj));
-    }
-
-    private boolean equals(ResourceDataDef obj) {
-      return (this.totalMemoryInKB == obj.getMemory() && this.totalCpu == obj.getCpu());
-    }
   }
 }

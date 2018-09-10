@@ -19,7 +19,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.locks.Lock;
 
 public abstract class AbstractBenchmark implements Benchmark {
   protected final CmdArgs config;
@@ -31,6 +30,10 @@ public abstract class AbstractBenchmark implements Benchmark {
   protected abstract void setup(CuratorFramework client) throws Exception;
 
   protected abstract void teardown(CuratorFramework client) throws Exception;
+
+  protected void printBenchState() {
+    // No-Op
+  }
 
   @Override
   public Result run() {
@@ -148,6 +151,7 @@ public abstract class AbstractBenchmark implements Benchmark {
     }
 
     if (config.printVerbose()) {
+      printBenchState();
       successes.forEach(result -> System.out.println(result.toString()));
     }
 
@@ -181,7 +185,7 @@ public abstract class AbstractBenchmark implements Benchmark {
   }
 
   public static abstract class AbstractTask implements Task {
-    private final CmdArgs cmdArgs;
+    protected final CmdArgs cmdArgs;
     private volatile boolean terminated = false;
     protected int taskId;
 
@@ -238,10 +242,6 @@ public abstract class AbstractBenchmark implements Benchmark {
           // ignore
         }
       }
-    }
-
-    protected boolean isTransactionDisabled() {
-      return cmdArgs.isTransactionsDisabled();
     }
   }
 }

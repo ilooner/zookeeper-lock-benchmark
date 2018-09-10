@@ -15,13 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.bench;
+package org.apache.bench.ZKBlobDataGen;
 
 import com.google.common.base.Preconditions;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.util.Map;
 
 public abstract class AbstractBlobData implements BlobData {
   //private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AbstractBlobData.class);
@@ -41,6 +42,8 @@ public abstract class AbstractBlobData implements BlobData {
   }
 
   public abstract byte[] getDataAsByteArray() throws IOException;
+
+  public abstract Map<?, ?> getOriginalData();
 
 
   protected byte[] getDataAsByteArray(Object inputData) throws IOException {

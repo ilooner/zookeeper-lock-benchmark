@@ -1,14 +1,18 @@
 package org.apache.bench;
 
 import com.google.common.base.Stopwatch;
+import org.apache.bench.ZKBlobDataGen.BlobData;
+import org.apache.bench.ZKBlobDataGen.DataDefConstants;
+import org.apache.bench.ZKBlobDataGen.NodeFreeUsedResourceData;
+import org.apache.bench.ZKBlobDataGen.NodeQueryClusterUtilization;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 public class LockAndMutateBench extends AbstractBenchmark {
@@ -31,23 +35,18 @@ public class LockAndMutateBench extends AbstractBenchmark {
 
   @Override
   protected void setup(CuratorFramework client) throws Exception {
+    int configNodeCount = config.getNodeCount();
+    configNodeCount = (configNodeCount == 0) ? DataDefConstants.DEFAULT_NODE_COUNT : configNodeCount;
 
     // For blob1 the data is for leaf resource pool. So keeping the resource pool count to 2
-    final BlobData blob1 = new ResourceData(2);
+    final BlobData blob1 = new NodeFreeUsedResourceData(configNodeCount);
     blob1.generate();
     blob1Data = blob1.getDataAsByteArray();
 
     // For blob2 the data is for cluster wide node resource pool
-    int configNodeCount = config.getNodeCount();
-    configNodeCount = (configNodeCount == 0) ? ResourceData.DEFAULT_NODE_COUNT : configNodeCount;
-    final BlobData blob2 = new ResourceData(configNodeCount);
+    final BlobData blob2 = new NodeQueryClusterUtilization(configNodeCount);
     blob2.generate();
     blob2Data = blob2.getDataAsByteArray();
-
-    if (config.printVerbose()) {
-      System.out.println("Size of blob1 data: " + (blob1Data.length / 1024.0) + "KB");
-      System.out.println("Size of blob2 data: " + (blob2Data.length / 1024.0) + "KB");
-    }
 
     if (client.checkExists().forPath(BLOB_PATH_1) == null) {
       client.create().creatingParentsIfNeeded().forPath(BLOB_PATH_1, blob1Data);
@@ -70,30 +69,9 @@ public class LockAndMutateBench extends AbstractBenchmark {
   }
 
   @Override
-  public SuccessResult aggregateMetrics(List<SuccessResult> results) {
-    Map<String, TaskStatistics> aggregateMetrics = new HashMap<>();
-
-    TaskStatistics aggAcquireLockStats = new TaskStatistics(String.format("Aggregated-%s", ACQUIRE_TASK_NAME));
-    TaskStatistics aggReleaseLockStats = new TaskStatistics(String.format("Aggregated-%s", RELEASE_TASK_NAME));
-    TaskStatistics aggTransactionStats = new TaskStatistics(String.format("Aggregated-%s", TRANSACTION_TASK_NAME));
-
-    aggAcquireLockStats = results.stream()
-      .map(result -> result.getMetrics().get(ACQUIRE_TASK_NAME))
-      .reduce(aggAcquireLockStats, TaskStatistics::addOtherStats);
-
-    aggReleaseLockStats = results.stream()
-      .map(result -> result.getMetrics().get(RELEASE_TASK_NAME))
-      .reduce(aggReleaseLockStats, TaskStatistics::addOtherStats);
-
-    aggTransactionStats = results.stream()
-      .map(result -> result.getMetrics().get(TRANSACTION_TASK_NAME))
-      .reduce(aggTransactionStats, TaskStatistics::addOtherStats);
-
-    aggregateMetrics.put(aggAcquireLockStats.getName(), aggAcquireLockStats);
-    aggregateMetrics.put(aggReleaseLockStats.getName(), aggReleaseLockStats);
-    aggregateMetrics.put(aggTransactionStats.getName(), aggTransactionStats);
-
-    return new SuccessResult(aggregateMetrics);
+  protected void printBenchState() {
+    System.out.println("Size of blob1 data: " + (blob1Data.length / 1024.0) + " KB");
+    System.out.println("Size of blob2 data: " + (blob2Data.length / 1024.0) + " KB");
   }
 
   @Override
@@ -116,6 +94,8 @@ public class LockAndMutateBench extends AbstractBenchmark {
       TRANSACTION
     }
 
+    private final Random r = new Random();
+
     public Task(CmdArgs cmdArgs, int taskId) {
       super(cmdArgs, taskId);
     }
@@ -136,7 +116,7 @@ public class LockAndMutateBench extends AbstractBenchmark {
         InterProcessMutex mutex = new InterProcessMutex(client, LOCK_PATH);
 
         performTask(TaskType.ACQUIRE, timeToAcquire, lockAcquireStats, mutex, client);
-        if (!isTransactionDisabled()) {
+        if (!cmdArgs.isTransactionsDisabled()) {
           performTask(TaskType.TRANSACTION, timeToTransact, transactionStats, mutex, client);
         }
         performTask(TaskType.RELEASE, timeToRelease, lockReleaseStats, mutex, client);
@@ -166,7 +146,10 @@ public class LockAndMutateBench extends AbstractBenchmark {
           client.getData().forPath(BLOB_PATH_1);
           client.getData().forPath(BLOB_PATH_2);
 
-          // TODO: Determine how to get sleep time - random ?
+          // Choose a random time between min and max sleep time to mimic the time needed for transaction
+          int randomSleepTime = r.nextInt((cmdArgs.getMaxSleepTimeInMs() - cmdArgs.getMinSleepTimeInMs()) + 1)
+            + cmdArgs.getMinSleepTimeInMs();
+          Thread.sleep(randomSleepTime);
 
           Collection<CuratorTransactionResult> results = client.inTransaction()
             .setData().forPath(BLOB_PATH_1, blob1Data)

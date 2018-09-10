@@ -1,6 +1,7 @@
 package org.apache.bench;
 
 import com.beust.jcommander.Parameter;
+import org.apache.bench.ZKBlobDataGen.DataDefConstants;
 import org.apache.bench.validators.BenchmarkValidator;
 import org.apache.bench.validators.DurationValidator;
 import org.apache.bench.validators.NonNegativeLongValidator;
@@ -24,20 +25,30 @@ public class CmdArgs {
     description = "Duration of the benchmark in java.time.Duration format.")
   public String duration;
 
-  @Parameter(names = { "--throughputPerMs", "-t" }, validateWith = NonNegativeLongValidator.class,
+  @Parameter(names = { "--throughputPerMs", "-tps" }, validateWith = NonNegativeLongValidator.class,
     description = "Required throughput per ms")
   public long requiredThroughput;
 
   @Parameter(names = { "--noTransaction", "-x" }, description = "Run acquire/release test with no transaction request")
   public boolean noTransaction;
 
-  @Parameter(names = { "--nodeCount", "-s" }, validateWith = PositiveIntegerValidator.class, description = "Number of" +
-    " nodes to generate data for. Default is 100.")
-  public int nodeCount;
+  @Parameter(names = { "--nodeCount", "-nc" }, validateWith = PositiveIntegerValidator.class, description = "Number " +
+    "of nodes to generate data for.")
+  public int nodeCount = DataDefConstants.DEFAULT_NODE_COUNT;
 
   @Parameter(names = { "--verbose", "-v" }, description = "Print verbose result data for each client results along " +
     "with aggregate")
   public boolean verbose;
+
+  @Parameter(names = { "--minSleepTimeMs", "-mt" }, description = "Minimum sleep time to mimic computation during " +
+    "transaction lock. A time between minSleepTimeMs and maxSleepTimeMs is chosen.",
+    validateWith = PositiveIntegerValidator.class)
+  public int minSleepTimeInMs = 10;
+
+  @Parameter(names = { "--maxSleepTimeMs", "-Mt" }, description = "Minimum sleep time to mimic computation during " +
+    "transaction lock. A time between minSleepTimeMs and maxSleepTimeMs is chosen.",
+    validateWith = PositiveIntegerValidator.class)
+  public int maxSleepTimeInMs = 500;
 
   public String getConnectionString() {
     return connectionString;
@@ -69,5 +80,13 @@ public class CmdArgs {
 
   public int getNodeCount() {
     return nodeCount;
+  }
+
+  public int getMinSleepTimeInMs() {
+    return minSleepTimeInMs;
+  }
+
+  public int getMaxSleepTimeInMs() {
+    return maxSleepTimeInMs;
   }
 }

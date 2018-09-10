@@ -15,15 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.bench;
+package org.apache.bench.ZKBlobDataGen;
 
-import java.io.IOException;
-
-public interface BlobData {
-
-  void generate();
-
-  void generate(long sizeInKB);
-
-  byte[] getDataAsByteArray() throws IOException;
+public class DataDefConstants {
+  //private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(DataDefConstants.class);
+  public static final int DEFAULT_NODE_COUNT = 100;
 }
