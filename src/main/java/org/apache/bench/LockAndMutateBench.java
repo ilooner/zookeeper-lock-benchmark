@@ -151,12 +151,10 @@ public class LockAndMutateBench extends AbstractBenchmark {
           client.getData().forPath(BLOB_PATH_2);
 
           // Choose a random time between min and max sleep time to mimic the time needed for transaction.
-          // If both min and max sleep time is same then don't sleep at all
-          if (cmdArgs.getMinSleepTimeInMs() != cmdArgs.getMaxSleepTimeInMs()) {
-            int randomSleepTime = r.nextInt((cmdArgs.getMaxSleepTimeInMs() - cmdArgs.getMinSleepTimeInMs()) + 1)
+          // If both min and max sleep time is same then sleep for only that time
+          int randomSleepTime = r.nextInt((cmdArgs.getMaxSleepTimeInMs() - cmdArgs.getMinSleepTimeInMs()) + 1)
               + cmdArgs.getMinSleepTimeInMs();
-            Thread.sleep(randomSleepTime);
-          }
+          Thread.sleep(randomSleepTime);
 
           Collection<CuratorTransactionResult> results = client.inTransaction()
             .setData().forPath(BLOB_PATH_1, blob1Data)
