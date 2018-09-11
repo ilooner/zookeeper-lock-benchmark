@@ -168,7 +168,8 @@ public class LockAndMutateBench extends AbstractBenchmark {
         taskTimer.stop();
         statistics.addSuccess(taskTimer.elapsed(TimeUnit.MILLISECONDS));
       } catch (Exception e) {
-        statistics.addFailure();
+        taskTimer.stop();
+        statistics.addFailure(taskTimer.elapsed(TimeUnit.MILLISECONDS));
         //return new FailureResult("Failed releasing lock.", Lists.newArrayList(e));
       } finally {
         taskTimer.reset();

@@ -158,8 +158,9 @@ public interface Benchmark {
       return numSuccesses;
     }
 
-    public void addFailure() {
+    public void addFailure(double requestTime) {
       ++numFailure;
+      totalTimeForAllTasks += requestTime;
     }
 
     public double getCurrentThroughput() {

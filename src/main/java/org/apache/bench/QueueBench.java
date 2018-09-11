@@ -171,7 +171,7 @@ public class QueueBench extends AbstractBenchmark {
           lockAcquireStats.addSuccess(timer.elapsed(TimeUnit.MILLISECONDS));
         } catch (Exception ex) {
           timer.stop();
-          lockAcquireStats.addFailure();
+          lockAcquireStats.addFailure(timer.elapsed(TimeUnit.MILLISECONDS));
           continue;
         }
         queryService.execute(currentQuery);
@@ -183,7 +183,7 @@ public class QueueBench extends AbstractBenchmark {
           lockReleaseStats.addSuccess(timer.elapsed(TimeUnit.MILLISECONDS));
         } catch (Exception ex) {
           timer.stop();
-          lockReleaseStats.addFailure();
+          lockReleaseStats.addFailure(timer.elapsed(TimeUnit.MILLISECONDS));
         }
 
         final long totalThroughput = (long) (lockAcquireStats.getCurrentThroughput() +
