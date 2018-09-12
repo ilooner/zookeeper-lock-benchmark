@@ -7,21 +7,21 @@ import org.apache.bench.queue.DistributedQueue.QueueLease;
 import org.apache.bench.semaphore.DistributedSemaphore.DistributedLease;
 import org.apache.curator.framework.CuratorFramework;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 public class QueueBench extends AbstractBenchmark {
   public static final String NAME = "queue";
-  public static final String SMALL_QUEUE = "small";
-  public static final String LARGE_QUEUE = "large";
   public static final long CLUSTER_CPU = 10;
   public static final long CLUSTER_MEMORY = 100;
   public static final String ACQUIRE_TASK_NAME = "LockAcquireTasks";
   public static final String RELEASE_TASK_NAME = "LockReleaseTasks";
-  public static final String BASE_PATH = "/org/apache/zookeeperbench/";
+  public static final String TASK_TIMEOUT_NAME = "TimeoutTasks";
+  public static final String BASE_PATH = "/org/apache/zookeeperbench";
   public static final TaskStatistics lockAcquireStats = new TaskStatistics(ACQUIRE_TASK_NAME);
   public static final TaskStatistics lockReleaseStats = new TaskStatistics(RELEASE_TASK_NAME);
+  public static final TaskStatistics lockTimeOutStats = new TaskStatistics(TASK_TIMEOUT_NAME);
   private ResourceManager rm;
 
   public static class ResourceManager {
@@ -36,27 +36,38 @@ public class QueueBench extends AbstractBenchmark {
       this.costToQueueMap = costMapping;
     }
 
-    public QueueLease allocate(Query qry) throws Exception {
+    public QueueLease allocate(Query qry, long time, TimeUnit timeUnit) throws Exception {
       String queuename = this.costToQueueMap.get(qry.getQueryCost());
-      return new QueueLease(queuename, scheduler.schedule(qry, this.queues.get(queuename)));
+      return new QueueLease(queuename, scheduler.schedule(qry, this.queues.get(queuename), time, timeUnit));
     }
 
     public void release(QueueLease lease) throws Exception {
       this.queues.get(lease.queueName()).release(lease.getDistributedLease());
+    }
+
+    public void close(CuratorFramework client) throws Exception {
+      for (Map.Entry<String, DistributedQueue> e : queues.entrySet()) {
+        e.getValue().close(client);
+      }
     }
   }
 
   public static class QueryService {
     public final int taskID;
     private int qNo;
+    private final CmdArgs args;
+    private final Random r = new Random();
 
-    public QueryService(int tid) {
+    public QueryService(int tid, CmdArgs args) {
       this.taskID = tid;
       this.qNo = 0;
+      this.args = args;
     }
 
     public Query buildQuery() {
-      return new Query(Integer.toString(taskID) + Integer.toString(qNo++));
+      int qExecTime = r.nextInt((args.maxQueryExecTime - args.minQueryExecTime) + 1) + args.minQueryExecTime;
+      int qCost = r.nextInt((args.maxQueryCost - args.minQueryCost) + 1) + args.minQueryCost;
+      return new Query(Integer.toString(taskID) + Integer.toString(qNo++), qCost, qExecTime);
     }
 
     public void execute(Query query) {
@@ -73,10 +84,10 @@ public class QueueBench extends AbstractBenchmark {
     private long queryTime;
     private int queryCost;
 
-    public Query(String qID) {
+    public Query(String qID, int queryCost, int queryExecTime) {
       this.queryID = qID;
-      this.queryTime = (long) (Math.random() * 10);
-      this.queryCost = (int) (Math.random() * 2);
+      this.queryTime = queryExecTime;
+      this.queryCost = queryCost;
     }
 
     public long getQueryTime() {
@@ -99,49 +110,41 @@ public class QueueBench extends AbstractBenchmark {
   @Override
   protected void setup(CuratorFramework client) throws Exception {
     Map<String, DistributedQueue> queues = new HashMap<>();
-    queues.put(SMALL_QUEUE,
-            new DistributedQueue(SMALL_QUEUE, (long)(CLUSTER_CPU * 0.2),
-                    (long)(CLUSTER_MEMORY * 0.2),
-                    BASE_PATH, client));
-    queues.put(LARGE_QUEUE,
-            new DistributedQueue(LARGE_QUEUE, (long)(CLUSTER_CPU * 0.8),
-                    (long)(CLUSTER_MEMORY * 0.8),
-                    BASE_PATH, client));
-
     Map<Integer, String> costToQueueMap = new HashMap<>();
-    costToQueueMap.put(0, SMALL_QUEUE);
-    costToQueueMap.put(1, LARGE_QUEUE);
+
+    double equalDist = 1/this.config.queueCount;
+    for (int i=0;i<this.config.queueCount;i++) {
+      String qname = NAME + i;
+      queues.put(qname, new DistributedQueue(qname, (long)(CLUSTER_CPU * equalDist),
+              (long)(CLUSTER_MEMORY * equalDist), BASE_PATH, client));
+      costToQueueMap.put(0, qname);
+    }
+
     this.rm = new ResourceManager(queues, new Scheduler() {
       @Override
-      public DistributedLease schedule(Query qry, DistributedQueue queue) throws Exception {
-        DistributedLease lease = queue.enqueue();
+      public DistributedLease schedule(Query qry, DistributedQueue queue, long time, TimeUnit timeUnit) throws Exception {
+        DistributedLease lease = queue.enqueue(time, timeUnit);
         //The logic of allocating the queue resources for this query goes here.
         return lease;
       }
     }, costToQueueMap);
   }
 
-  @Override
-  protected void teardown(CuratorFramework client) throws Exception {
-
-  }
-
-  @Override
-  public SuccessResult aggregateMetrics(List<SuccessResult> metrics) {
-    return null;
-  }
-
-  @Override
-  public Task createTask(CmdArgs cmdArgs, int taskId) {
-    return new Task(cmdArgs, this.rm, taskId);
-  }
-
   public static class Factory implements Benchmark.Factory<QueueBench> {
-
     @Override
-    public QueueBench create(CmdArgs config) {
+    public QueueBench create(final CmdArgs config) {
       return new QueueBench(config);
     }
+  }
+
+  @Override
+  protected void teardown(CuratorFramework client) throws Exception {
+    this.rm.close(client);
+  }
+
+  @Override
+  public Task createTask(CmdArgs cmdArgs, int taskId, CuratorFramework client) {
+    return new Task(cmdArgs, this.rm, taskId, client);
   }
 
   public static class Task extends AbstractTask {
@@ -149,9 +152,9 @@ public class QueueBench extends AbstractBenchmark {
     private final ResourceManager rm;
     private final QueryService queryService;
 
-    public Task(CmdArgs cmdArgs, ResourceManager rm, int taskId) {
-      super(cmdArgs, taskId);
-      this.queryService = new QueryService(this.hashCode());
+    public Task(CmdArgs cmdArgs, ResourceManager rm, int taskId, CuratorFramework client) {
+      super(cmdArgs, taskId, client);
+      this.queryService = new QueryService(this.hashCode(), cmdArgs);
       this.rm = rm;
     }
 
@@ -166,14 +169,19 @@ public class QueueBench extends AbstractBenchmark {
         QueueLease lease;
         try {
           timer.start();
-          lease = rm.allocate(currentQuery);
+          lease = rm.allocate(currentQuery, cmdArgs.queryWaitTime, TimeUnit.MILLISECONDS);
           timer.stop();
           lockAcquireStats.addSuccess(timer.elapsed(TimeUnit.MILLISECONDS));
         } catch (Exception ex) {
           timer.stop();
-          lockAcquireStats.addFailure(timer.elapsed(TimeUnit.MILLISECONDS));
+          if (timer.elapsed(TimeUnit.MILLISECONDS) > cmdArgs.queryWaitTime) {
+            lockTimeOutStats.addFailure(timer.elapsed(TimeUnit.MILLISECONDS));
+          } else {
+            lockAcquireStats.addFailure(timer.elapsed(TimeUnit.MILLISECONDS));
+          }
           continue;
         }
+
         queryService.execute(currentQuery);
 
         try {
@@ -192,6 +200,7 @@ public class QueueBench extends AbstractBenchmark {
       }
       metrics.put(lockAcquireStats.getName(), lockAcquireStats);
       metrics.put(lockReleaseStats.getName(), lockReleaseStats);
+      metrics.put(lockTimeOutStats.getName(), lockTimeOutStats);
 
       return new SuccessResult(metrics);
     }

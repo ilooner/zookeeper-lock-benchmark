@@ -79,8 +79,8 @@ public class LockAndMutateBench extends AbstractBenchmark {
   }
 
   @Override
-  public Task createTask(CmdArgs cmdArgs, int taskId) {
-    return new Task(cmdArgs, taskId);
+  public Task createTask(CmdArgs cmdArgs, int taskId, CuratorFramework client) {
+    return new Task(cmdArgs, taskId, client);
   }
 
   public static class Factory implements Benchmark.Factory<LockAndMutateBench> {
@@ -100,8 +100,8 @@ public class LockAndMutateBench extends AbstractBenchmark {
 
     private final Random r = new Random();
 
-    public Task(CmdArgs cmdArgs, int taskId) {
-      super(cmdArgs, taskId);
+    public Task(CmdArgs cmdArgs, int taskId, CuratorFramework client) {
+      super(cmdArgs, taskId, client);
     }
 
     @Override

@@ -22,7 +22,7 @@ public class QueueLockAndMutateBench extends AbstractBenchmark {
   }
 
   @Override
-  public Task createTask(CmdArgs cmdArgs, int taskId) {
+  public Task createTask(CmdArgs cmdArgs, int taskId, CuratorFramework client) {
     return null;
   }
 

@@ -60,13 +60,13 @@ public class AbstractBenchmarkTest {
     }
 
     @Override
-    protected Task createTask(CmdArgs cmdArgs, int taskId) {
-      return new MockTask(cmdArgs, 1);
+    protected Task createTask(CmdArgs cmdArgs, int taskId, CuratorFramework client) {
+      return new MockTask(cmdArgs, 1, client);
     }
 
     public static class MockTask extends AbstractTask {
-      public MockTask(CmdArgs cmdArgs, int taskId) {
-        super(cmdArgs, 1);
+      public MockTask(CmdArgs cmdArgs, int taskId, CuratorFramework client) {
+        super(cmdArgs, 1, client);
       }
 
       @Override

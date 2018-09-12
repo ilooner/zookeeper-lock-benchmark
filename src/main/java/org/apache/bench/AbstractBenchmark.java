@@ -48,13 +48,8 @@ public abstract class AbstractBenchmark implements Benchmark {
       setup(setupClient);
     } catch (Exception e) {
       failures.add(new FailureResult("Failure during setup.", Lists.newArrayList(e)));
-    } finally {
       if (setupClient != null) {
-        try {
-          setupClient.close();
-        } catch (Exception e) {
-          failures.add(new FailureResult("Failure while closing curator framework.", Lists.newArrayList(e)));
-        }
+        setupClient.close();
       }
     }
 
@@ -69,7 +64,7 @@ public abstract class AbstractBenchmark implements Benchmark {
     List<ListenableFuture<Result>> futures = Lists.newArrayList();
 
     for (int taskCount = 0; taskCount < config.getNumClients(); taskCount++) {
-      final Task task = createTask(config, taskCount);
+      final Task task = createTask(config, taskCount, setupClient);
       final ListenableFuture<Result> future = executorService.submit(task);
 
       tasks.add(task);
@@ -176,7 +171,7 @@ public abstract class AbstractBenchmark implements Benchmark {
     return new SuccessResult(aggMap);
   }
 
-  protected abstract Task createTask(final CmdArgs cmdArgs, int taskId);
+  protected abstract Task createTask(final CmdArgs cmdArgs, int taskId, CuratorFramework client);
 
   public static CuratorFramework createClient(final CmdArgs cmdArgs) {
     final RetryPolicy policy = new RetryNTimes(3, 10000);
@@ -188,33 +183,23 @@ public abstract class AbstractBenchmark implements Benchmark {
     protected final CmdArgs cmdArgs;
     private volatile boolean terminated = false;
     protected int taskId;
+    private final CuratorFramework client;
 
-    public AbstractTask(final CmdArgs cmdArgs, int taskId) {
+    public AbstractTask(final CmdArgs cmdArgs, int taskId, CuratorFramework client) {
       this.cmdArgs = Preconditions.checkNotNull(cmdArgs);
       this.taskId = taskId;
+      this.client = client;
     }
 
     @Override
     public Result call() throws Exception {
-      CuratorFramework client = null;
       List<Exception> exceptionList = new ArrayList<>();
       Result result = null;
 
       try {
-        client = createClient(cmdArgs);
-        client.start();
-        client.blockUntilConnected(1, TimeUnit.MINUTES);
         result = runTask(client);
       } catch (Exception ex) {
         exceptionList.add(ex);
-      } finally {
-        if (client != null) {
-          try {
-            client.close();
-          } catch (Exception exClose) {
-            exceptionList.add(exClose);
-          }
-        }
       }
 
       if (!exceptionList.isEmpty() || result == null) {

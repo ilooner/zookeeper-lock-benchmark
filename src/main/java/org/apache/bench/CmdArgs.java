@@ -50,6 +50,30 @@ public class CmdArgs {
     validateWith = NonNegativeLongValidator.class)
   public int maxSleepTimeInMs = 500;
 
+  @Parameter(names = { "--queryWaitTimeInMs", "-qwt" }, description = "Query wait time for acquiring distributed semaphore",
+          validateWith = NonNegativeLongValidator.class)
+  public int queryWaitTime = 10000;
+
+  @Parameter(names = { "--queueCount", "-qc" }, description = "Number of queues to use for Queue benchmark",
+          validateWith = NonNegativeLongValidator.class)
+  public int queueCount = 2;
+
+  @Parameter(names = { "--minQueryExecTimeInMs", "-mqet" }, description = "Minimum query execution time",
+          validateWith = NonNegativeLongValidator.class)
+  public int minQueryExecTime = 0;
+
+  @Parameter(names = { "--maxQueryExecTimeInMs", "-Mqet" }, description = "Maximum query execution time",
+          validateWith = NonNegativeLongValidator.class)
+  public int maxQueryExecTime = 10000;
+
+  @Parameter(names = { "--minQueryCost", "-mqc" }, description = "Minimum cost that a query can be assigned",
+          validateWith = NonNegativeLongValidator.class)
+  public int minQueryCost = 0;
+
+  @Parameter(names = { "--maxQueryCost", "-Mqc" }, description = "Maximum cost that a query can be assigned",
+          validateWith = NonNegativeLongValidator.class)
+  public int maxQueryCost = queueCount - 1;
+
   public String getConnectionString() {
     return connectionString;
   }

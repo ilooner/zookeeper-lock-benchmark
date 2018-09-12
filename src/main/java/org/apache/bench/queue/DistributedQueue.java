@@ -14,6 +14,8 @@ public class DistributedQueue {
   private final long memory;
   private final DistributedSemaphore semaphore;
   private final InterProcessMutex lock;
+  private final String queue_path;
+  private final String queue_lock_path;
 
   public static class QueueLease {
     private final String queuename;
@@ -38,16 +40,27 @@ public class DistributedQueue {
     this.name = name;
     this.cpu = cpu;
     this.memory = memory;
-    this.semaphore = new ZkDistributedSemaphore(client, QUEUE_PATH + "/" + name + "/semaphore",8 );
-    this.lock = new InterProcessMutex(client, QUEUE_PATH + "/" + name + "/lock");
+    this.queue_path = QUEUE_PATH + "/" + name + "/semaphore";
+    this.queue_lock_path = QUEUE_PATH + "/" + name + "/lock";
+    this.semaphore = new ZkDistributedSemaphore(client, queue_path,8 );
+    this.lock = new InterProcessMutex(client, queue_lock_path);
   }
 
-
-  public DistributedLease enqueue() throws Exception {
-    return this.semaphore.acquire(5, TimeUnit.MINUTES);
+  public DistributedLease enqueue(long time, TimeUnit unit) throws Exception {
+    return this.semaphore.acquire(time, unit);
   }
 
   public void release(DistributedLease lease) throws Exception {
     lease.close();
+  }
+
+  public void close(CuratorFramework client) throws Exception {
+    if (client.checkExists().forPath(queue_path) != null) {
+      client.delete().deletingChildrenIfNeeded().forPath(queue_path);
+    }
+
+    if (client.checkExists().forPath(queue_lock_path) != null) {
+      client.delete().deletingChildrenIfNeeded().forPath(queue_lock_path);
+    }
   }
 }
