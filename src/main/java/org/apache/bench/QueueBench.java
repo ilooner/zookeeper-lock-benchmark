@@ -168,6 +168,7 @@ public class QueueBench extends AbstractBenchmark {
         Query currentQuery = queryService.buildQuery();
         QueueLease lease;
         try {
+          timer.reset();
           timer.start();
           lease = rm.allocate(currentQuery, cmdArgs.queryWaitTime, TimeUnit.MILLISECONDS);
           timer.stop();
@@ -185,6 +186,7 @@ public class QueueBench extends AbstractBenchmark {
         queryService.execute(currentQuery);
 
         try {
+          timer.reset();
           timer.start();
           rm.release(lease);
           timer.stop();
