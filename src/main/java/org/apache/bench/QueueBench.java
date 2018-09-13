@@ -22,9 +22,7 @@ public class QueueBench extends AbstractBenchmark {
   public static final String TASK_TIMEOUT_NAME = "TimeoutTasks";
   public static final String BASE_PATH = "/org/apache/zookeeperbench";
   public static final String CREATE_LOCK_PATH = BASE_PATH + "/globallock";
-  public static final TaskStatistics lockAcquireStats = new TaskStatistics(ACQUIRE_TASK_NAME);
-  public static final TaskStatistics lockReleaseStats = new TaskStatistics(RELEASE_TASK_NAME);
-  public static final TaskStatistics lockTimeOutStats = new TaskStatistics(TASK_TIMEOUT_NAME);
+
   private ResourceManager rm;
   public InterProcessMutex mutex;
 
@@ -169,6 +167,9 @@ public class QueueBench extends AbstractBenchmark {
     @Override
     public Result runTask(CuratorFramework client) {
       Stopwatch timer = new Stopwatch();
+      final TaskStatistics lockAcquireStats = new TaskStatistics(ACQUIRE_TASK_NAME, this.taskId);
+      final TaskStatistics lockReleaseStats = new TaskStatistics(RELEASE_TASK_NAME, this.taskId);
+      final TaskStatistics lockTimeOutStats = new TaskStatistics(TASK_TIMEOUT_NAME, this.taskId);
 
       final Map<String, TaskStatistics> metrics = new HashMap<>();
 
