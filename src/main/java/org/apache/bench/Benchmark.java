@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 public interface Benchmark {
   Result run();
@@ -127,9 +128,9 @@ public interface Benchmark {
 
     private double numSuccesses;
     private double numFailure;
-    private double maxSuccessRequestTimeInMs = Double.MIN_VALUE;
-    private double minSuccessRequestTimeInMs = Double.MAX_VALUE;
-    private double totalTimeForAllTasks;
+    private long maxSuccessRequestTimeInNanoSec = Long.MIN_VALUE;
+    private long minSuccessRequestTimeInNanoSec = Long.MAX_VALUE;
+    private long totalTimeForAllTasksNanoSec;
 
     TaskStatistics(String name, int taskId) {
       this.name = name;
@@ -149,7 +150,7 @@ public interface Benchmark {
       return name;
     }
 
-    public void addSuccess(double requestTime) {
+    public void addSuccess(long requestTime) {
       ++numSuccesses;
       updateTimes(requestTime);
     }
@@ -158,19 +159,19 @@ public interface Benchmark {
       return numSuccesses;
     }
 
-    public void addFailure(double requestTime) {
+    public void addFailure(long requestTime) {
       ++numFailure;
-      totalTimeForAllTasks += requestTime;
+      totalTimeForAllTasksNanoSec += requestTime;
     }
 
     public double getCurrentThroughput() {
-      return (numSuccesses / totalTimeForAllTasks);
+      return (numSuccesses / totalTimeForAllTasksNanoSec);
     }
 
-    private void updateTimes(double newTime) {
-      maxSuccessRequestTimeInMs = Math.max(maxSuccessRequestTimeInMs, newTime);
-      minSuccessRequestTimeInMs = Math.min(minSuccessRequestTimeInMs, newTime);
-      totalTimeForAllTasks += newTime;
+    private void updateTimes(long newTime) {
+      maxSuccessRequestTimeInNanoSec = Math.max(maxSuccessRequestTimeInNanoSec, newTime);
+      minSuccessRequestTimeInNanoSec = Math.min(minSuccessRequestTimeInNanoSec, newTime);
+      totalTimeForAllTasksNanoSec += newTime;
     }
 
     @Override
@@ -180,9 +181,13 @@ public interface Benchmark {
       sb.append(String.format("Final result for task type: %s and id: %s \n", name, taskId));
       sb.append(String.format("Count: Success: %s, Failure: %s\n", numSuccesses, numFailure));
       sb.append(String.format("Time: Total across resources(ms): %s, MaxRequestTime(ms): %s, " +
-        "MinRequestTime(ms): %s,  Average Time(ms): %s\n", totalTimeForAllTasks, maxSuccessRequestTimeInMs,
-        minSuccessRequestTimeInMs, (totalTimeForAllTasks / numSuccesses)));
-      sb.append(String.format("IOPS: %s\n", (numSuccesses * 1000 / totalTimeForAllTasks)));
+        "MinRequestTime(ms): %s,  Average Time(ms): %s\n",
+        TimeUnit.MILLISECONDS.convert(totalTimeForAllTasksNanoSec, TimeUnit.NANOSECONDS),
+        TimeUnit.MILLISECONDS.convert(maxSuccessRequestTimeInNanoSec, TimeUnit.NANOSECONDS),
+        TimeUnit.MILLISECONDS.convert(minSuccessRequestTimeInNanoSec, TimeUnit.NANOSECONDS),
+        TimeUnit.MILLISECONDS.convert((long)(totalTimeForAllTasksNanoSec / numSuccesses), TimeUnit.NANOSECONDS)));
+      sb.append(String.format("IOPS: %s\n",
+        (numSuccesses / TimeUnit.SECONDS.convert(totalTimeForAllTasksNanoSec, TimeUnit.NANOSECONDS))));
       sb.append("================================================================\n");
       return sb.toString();
     }
@@ -191,10 +196,10 @@ public interface Benchmark {
       this.taskId = this.taskId.concat(String.format(" -- %s", other.taskId));
       this.numSuccesses += other.numSuccesses;
       this.numFailure += other.numFailure;
-      this.maxSuccessRequestTimeInMs = Math.max(this.maxSuccessRequestTimeInMs, other.maxSuccessRequestTimeInMs);
-      this.minSuccessRequestTimeInMs = Math.min(this.minSuccessRequestTimeInMs, other.minSuccessRequestTimeInMs);
+      this.maxSuccessRequestTimeInNanoSec = Math.max(this.maxSuccessRequestTimeInNanoSec, other.maxSuccessRequestTimeInNanoSec);
+      this.minSuccessRequestTimeInNanoSec = Math.min(this.minSuccessRequestTimeInNanoSec, other.minSuccessRequestTimeInNanoSec);
       // Take the max out of all the stats since all tasks were executed in parallel
-      this.totalTimeForAllTasks = Math.max(this.totalTimeForAllTasks, other.totalTimeForAllTasks);
+      this.totalTimeForAllTasksNanoSec = Math.max(this.totalTimeForAllTasksNanoSec, other.totalTimeForAllTasksNanoSec);
       return this;
     }
   }

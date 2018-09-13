@@ -115,24 +115,28 @@ public class LockAndMutateBench extends AbstractBenchmark {
       final TaskStatistics transactionStats = new TaskStatistics(TRANSACTION_TASK_NAME, taskId);
 
       final Map<String, TaskStatistics> metrics = new HashMap<>();
+      InterProcessMutex mutex = new InterProcessMutex(client, LOCK_PATH);
 
       while (!isTerminated()) {
-        InterProcessMutex mutex = new InterProcessMutex(client, LOCK_PATH);
-
         performTask(TaskType.ACQUIRE, timeToAcquire, lockAcquireStats, mutex, client);
         if (!cmdArgs.isTransactionsDisabled()) {
           performTask(TaskType.TRANSACTION, timeToTransact, transactionStats, mutex, client);
         }
         performTask(TaskType.RELEASE, timeToRelease, lockReleaseStats, mutex, client);
 
-        final long totalThroughput = (long) (lockAcquireStats.getCurrentThroughput() +
-          lockReleaseStats.getCurrentThroughput() + transactionStats.getCurrentThroughput());
+        long totalThroughput = (long) (lockAcquireStats.getCurrentThroughput() +
+          lockReleaseStats.getCurrentThroughput());
+        if (!cmdArgs.isTransactionsDisabled()) {
+          totalThroughput += (long)transactionStats.getCurrentThroughput();
+        }
         throttleIfRequired(totalThroughput);
       }
 
       metrics.put(lockAcquireStats.getName(), lockAcquireStats);
       metrics.put(lockReleaseStats.getName(), lockReleaseStats);
-      metrics.put(transactionStats.getName(), transactionStats);
+      if (!cmdArgs.isTransactionsDisabled()) {
+        metrics.put(transactionStats.getName(), transactionStats);
+      }
 
       return new SuccessResult(metrics);
     }
@@ -164,10 +168,12 @@ public class LockAndMutateBench extends AbstractBenchmark {
             .commit();
         }
         taskTimer.stop();
-        statistics.addSuccess(taskTimer.elapsed(TimeUnit.MILLISECONDS));
+        // Don't convert each time into milliseconds, since conversion will do casting resulting in precision loss in
+        // the result
+        statistics.addSuccess(taskTimer.elapsed(TimeUnit.NANOSECONDS));
       } catch (Exception e) {
         taskTimer.stop();
-        statistics.addFailure(taskTimer.elapsed(TimeUnit.MILLISECONDS));
+        statistics.addFailure(taskTimer.elapsed(TimeUnit.NANOSECONDS));
         //return new FailureResult("Failed releasing lock.", Lists.newArrayList(e));
       } finally {
         taskTimer.reset();
