@@ -126,8 +126,8 @@ public interface Benchmark {
     private final String name;
     private String taskId;
 
-    private double numSuccesses;
-    private double numFailure;
+    private long numSuccesses;
+    private long numFailure;
     private long maxSuccessRequestTimeInNanoSec = Long.MIN_VALUE;
     private long minSuccessRequestTimeInNanoSec = Long.MAX_VALUE;
     private long totalTimeForAllTasksNanoSec;

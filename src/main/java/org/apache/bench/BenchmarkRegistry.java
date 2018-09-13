@@ -13,6 +13,7 @@ public class BenchmarkRegistry {
     registry.put(LockAndMutateBench.NAME, new LockAndMutateBench.Factory());
     registry.put(QueueBench.NAME, new QueueBench.Factory());
     registry.put(QueueLockAndMutateBench.NAME, new QueueLockAndMutateBench.Factory());
+    registry.put(TransactionBenchmark.NAME, new TransactionBenchmark.Factory());
 
     return Collections.unmodifiableMap(registry);
   }).get();

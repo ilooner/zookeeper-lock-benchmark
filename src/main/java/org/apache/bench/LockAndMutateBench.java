@@ -141,7 +141,7 @@ public class LockAndMutateBench extends AbstractBenchmark {
       return new SuccessResult(metrics);
     }
 
-    private void performTask(TaskType taskType, Stopwatch taskTimer, TaskStatistics statistics,
+    private boolean performTask(TaskType taskType, Stopwatch taskTimer, TaskStatistics statistics,
                              InterProcessMutex mutex, CuratorFramework client) {
       try {
         taskTimer.start();
@@ -171,10 +171,12 @@ public class LockAndMutateBench extends AbstractBenchmark {
         // Don't convert each time into milliseconds, since conversion will do casting resulting in precision loss in
         // the result
         statistics.addSuccess(taskTimer.elapsed(TimeUnit.NANOSECONDS));
+        return true;
       } catch (Exception e) {
         taskTimer.stop();
         statistics.addFailure(taskTimer.elapsed(TimeUnit.NANOSECONDS));
         //return new FailureResult("Failed releasing lock.", Lists.newArrayList(e));
+        return false;
       } finally {
         taskTimer.reset();
       }
