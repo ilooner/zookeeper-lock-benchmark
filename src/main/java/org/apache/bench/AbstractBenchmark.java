@@ -124,17 +124,19 @@ public abstract class AbstractBenchmark implements Benchmark {
       executorService.shutdownNow();
     }
 
-    final CuratorFramework teardownClient = createClient(config);
+    //final CuratorFramework teardownClient = createClient(config);
 
     try {
-      teardownClient.start();
-      teardown(teardownClient);
+      //teardownClient.start();
+      //teardown(teardownClient);
+      Thread.sleep(10000);
+      teardown(setupClient);
     } catch (Exception e) {
       failures.add(new FailureResult("Failure during teardown.", Lists.newArrayList(e)));
     } finally {
-      if (teardownClient != null) {
+      if (setupClient != null) {
         try {
-          teardownClient.close();
+          setupClient.close();
         } catch (Exception e) {
           failures.add(new FailureResult("Failure during teardown.", Lists.newArrayList(e)));
         }

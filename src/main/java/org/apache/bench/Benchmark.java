@@ -179,14 +179,13 @@ public interface Benchmark {
       StringBuffer sb = new StringBuffer();
       sb.append("================================================================\n");
       sb.append(String.format("Final result for task type: %s and id: %s \n", name, taskId));
-      sb.append(String.format("Count: Success: %s, Failure: %s\n", numSuccesses, numFailure));
-      sb.append(String.format("Time: Total across resources(ms): %s, MaxRequestTime(ms): %s, " +
-        "MinRequestTime(ms): %s,  Average Time(ms): %s\n",
+      sb.append(String.format("Success, Failure, Total_Across_Resources(ms), MaxRequestTime(ms), MinRequestTime(ms), " +
+          "Average Time(ms), IOPS"));
+      sb.append(String.format("%s, %s, %s, %s, %s, %s, %s", numSuccesses, numFailure ,
         TimeUnit.MILLISECONDS.convert(totalTimeForAllTasksNanoSec, TimeUnit.NANOSECONDS),
         TimeUnit.MILLISECONDS.convert(maxSuccessRequestTimeInNanoSec, TimeUnit.NANOSECONDS),
         TimeUnit.MILLISECONDS.convert(minSuccessRequestTimeInNanoSec, TimeUnit.NANOSECONDS),
-        TimeUnit.MILLISECONDS.convert((long)(totalTimeForAllTasksNanoSec / numSuccesses), TimeUnit.NANOSECONDS)));
-      sb.append(String.format("IOPS: %s\n",
+        TimeUnit.MILLISECONDS.convert((long)(totalTimeForAllTasksNanoSec / numSuccesses), TimeUnit.NANOSECONDS),
         (numSuccesses / TimeUnit.SECONDS.convert(totalTimeForAllTasksNanoSec, TimeUnit.NANOSECONDS))));
       sb.append("================================================================\n");
       return sb.toString();

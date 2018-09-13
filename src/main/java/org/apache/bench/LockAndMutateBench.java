@@ -67,15 +67,15 @@ public class LockAndMutateBench extends AbstractBenchmark {
   protected void teardown(CuratorFramework client) throws Exception {
     mutex.acquire();
     if (client.checkExists().forPath(BLOB_PATH_1) != null) {
-      client.delete().forPath(BLOB_PATH_1);
+      client.delete().deletingChildrenIfNeeded().forPath(BLOB_PATH_1);
     }
 
     if (client.checkExists().forPath(BLOB_PATH_2) != null) {
-      client.delete().forPath(BLOB_PATH_2);
+      client.delete().deletingChildrenIfNeeded().forPath(BLOB_PATH_2);
     }
 
     if (client.checkExists().forPath(LOCK_PATH) != null) {
-      client.delete().forPath(LOCK_PATH);
+      client.delete().deletingChildrenIfNeeded().forPath(LOCK_PATH);
     }
     mutex.release();
   }
