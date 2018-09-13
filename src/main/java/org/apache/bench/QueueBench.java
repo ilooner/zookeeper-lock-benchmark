@@ -6,6 +6,8 @@ import org.apache.bench.scheduler.Scheduler;
 import org.apache.bench.queue.DistributedQueue.QueueLease;
 import org.apache.bench.semaphore.DistributedSemaphore.DistributedLease;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -19,10 +21,12 @@ public class QueueBench extends AbstractBenchmark {
   public static final String RELEASE_TASK_NAME = "LockReleaseTasks";
   public static final String TASK_TIMEOUT_NAME = "TimeoutTasks";
   public static final String BASE_PATH = "/org/apache/zookeeperbench";
+  public static final String CREATE_LOCK_PATH = BASE_PATH + "/globallock";
   public static final TaskStatistics lockAcquireStats = new TaskStatistics(ACQUIRE_TASK_NAME);
   public static final TaskStatistics lockReleaseStats = new TaskStatistics(RELEASE_TASK_NAME);
   public static final TaskStatistics lockTimeOutStats = new TaskStatistics(TASK_TIMEOUT_NAME);
   private ResourceManager rm;
+  public InterProcessMutex mutex;
 
   public static class ResourceManager {
     private final Map<String, DistributedQueue> queues;
@@ -111,13 +115,14 @@ public class QueueBench extends AbstractBenchmark {
   protected void setup(CuratorFramework client) throws Exception {
     Map<String, DistributedQueue> queues = new HashMap<>();
     Map<Integer, String> costToQueueMap = new HashMap<>();
-
     double equalDist = 1/this.config.queueCount;
+    mutex = new InterProcessMutex(client, CREATE_LOCK_PATH);
+    mutex.acquire();
     for (int i=0;i<this.config.queueCount;i++) {
       String qname = NAME + i;
       queues.put(qname, new DistributedQueue(qname, (long)(CLUSTER_CPU * equalDist),
               (long)(CLUSTER_MEMORY * equalDist), this.config.numOfLeases, BASE_PATH, client));
-      costToQueueMap.put(0, qname);
+      costToQueueMap.put(i, qname);
     }
 
     this.rm = new ResourceManager(queues, new Scheduler() {
@@ -128,6 +133,7 @@ public class QueueBench extends AbstractBenchmark {
         return lease;
       }
     }, costToQueueMap);
+    mutex.release();
   }
 
   public static class Factory implements Benchmark.Factory<QueueBench> {
@@ -139,7 +145,9 @@ public class QueueBench extends AbstractBenchmark {
 
   @Override
   protected void teardown(CuratorFramework client) throws Exception {
+    mutex.acquire();
     this.rm.close(client);
+    mutex.release();
   }
 
   @Override
@@ -172,14 +180,16 @@ public class QueueBench extends AbstractBenchmark {
           timer.start();
           lease = rm.allocate(currentQuery, cmdArgs.queryWaitTime, TimeUnit.MILLISECONDS);
           timer.stop();
-          lockAcquireStats.addSuccess(timer.elapsed(TimeUnit.NANOSECONDS));
+          if (lease.getDistributedLease() == null) {
+            lockTimeOutStats.addFailure(timer.elapsed(TimeUnit.NANOSECONDS));
+            continue;
+          } else {
+            lockAcquireStats.addSuccess(timer.elapsed(TimeUnit.NANOSECONDS));
+          }
         } catch (Exception ex) {
           timer.stop();
-          if (timer.elapsed(TimeUnit.MILLISECONDS) > cmdArgs.queryWaitTime) {
-            lockTimeOutStats.addFailure(timer.elapsed(TimeUnit.NANOSECONDS));
-          } else {
-            lockAcquireStats.addFailure(timer.elapsed(TimeUnit.NANOSECONDS));
-          }
+          System.out.println(ex.getStackTrace());
+          lockAcquireStats.addFailure(timer.elapsed(TimeUnit.NANOSECONDS));
           continue;
         }
 

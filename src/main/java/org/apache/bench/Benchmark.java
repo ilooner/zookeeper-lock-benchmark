@@ -180,13 +180,13 @@ public interface Benchmark {
       sb.append("================================================================\n");
       sb.append(String.format("Final result for task type: %s and id: %s \n", name, taskId));
       sb.append(String.format("Success, Failure, Total_Across_Resources(ms), MaxRequestTime(ms), MinRequestTime(ms), " +
-          "Average Time(ms), IOPS"));
-      sb.append(String.format("%s, %s, %s, %s, %s, %s, %s", numSuccesses, numFailure ,
+          "Average Time(ms), IOPS\n"));
+      sb.append(String.format("%s, %s, %s, %s, %s, %s, %s\n", numSuccesses, numFailure ,
         TimeUnit.MILLISECONDS.convert(totalTimeForAllTasksNanoSec, TimeUnit.NANOSECONDS),
         TimeUnit.MILLISECONDS.convert(maxSuccessRequestTimeInNanoSec, TimeUnit.NANOSECONDS),
         TimeUnit.MILLISECONDS.convert(minSuccessRequestTimeInNanoSec, TimeUnit.NANOSECONDS),
-        TimeUnit.MILLISECONDS.convert((long)(totalTimeForAllTasksNanoSec / numSuccesses), TimeUnit.NANOSECONDS),
-        (numSuccesses / TimeUnit.SECONDS.convert(totalTimeForAllTasksNanoSec, TimeUnit.NANOSECONDS))));
+        TimeUnit.MILLISECONDS.convert((totalTimeForAllTasksNanoSec / (numSuccesses == 0 ? 1 : numSuccesses)), TimeUnit.NANOSECONDS),
+        (numSuccesses  * 1000000000 / (totalTimeForAllTasksNanoSec == 0 ? 1 : totalTimeForAllTasksNanoSec))));
       sb.append("================================================================\n");
       return sb.toString();
     }
