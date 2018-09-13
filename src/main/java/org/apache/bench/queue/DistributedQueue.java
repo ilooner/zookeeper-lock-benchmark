@@ -35,14 +35,14 @@ public class DistributedQueue {
     }
   }
 
-  public DistributedQueue(String name, long cpu, long memory,
+  public DistributedQueue(String name, long cpu, long memory, int numOfLeases,
                           String QUEUE_PATH, CuratorFramework client) {
     this.name = name;
     this.cpu = cpu;
     this.memory = memory;
     this.queue_path = QUEUE_PATH + "/" + name + "/semaphore";
     this.queue_lock_path = QUEUE_PATH + "/" + name + "/lock";
-    this.semaphore = new ZkDistributedSemaphore(client, queue_path,8 );
+    this.semaphore = new ZkDistributedSemaphore(client, queue_path,numOfLeases );
     this.lock = new InterProcessMutex(client, queue_lock_path);
   }
 

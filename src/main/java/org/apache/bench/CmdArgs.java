@@ -74,6 +74,10 @@ public class CmdArgs {
           validateWith = NonNegativeLongValidator.class)
   public int maxQueryCost = queueCount - 1;
 
+  @Parameter(names = { "--numOfLeases", "-nl" }, description = "Maximum cost that a query can be assigned",
+          validateWith = NonNegativeLongValidator.class)
+  public int numOfLeases = 8;
+
   public String getConnectionString() {
     return connectionString;
   }

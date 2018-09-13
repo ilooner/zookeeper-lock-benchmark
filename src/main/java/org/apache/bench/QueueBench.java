@@ -116,7 +116,7 @@ public class QueueBench extends AbstractBenchmark {
     for (int i=0;i<this.config.queueCount;i++) {
       String qname = NAME + i;
       queues.put(qname, new DistributedQueue(qname, (long)(CLUSTER_CPU * equalDist),
-              (long)(CLUSTER_MEMORY * equalDist), BASE_PATH, client));
+              (long)(CLUSTER_MEMORY * equalDist), this.config.numOfLeases, BASE_PATH, client));
       costToQueueMap.put(0, qname);
     }
 
@@ -172,13 +172,13 @@ public class QueueBench extends AbstractBenchmark {
           timer.start();
           lease = rm.allocate(currentQuery, cmdArgs.queryWaitTime, TimeUnit.MILLISECONDS);
           timer.stop();
-          lockAcquireStats.addSuccess(timer.elapsed(TimeUnit.MILLISECONDS));
+          lockAcquireStats.addSuccess(timer.elapsed(TimeUnit.NANOSECONDS));
         } catch (Exception ex) {
           timer.stop();
           if (timer.elapsed(TimeUnit.MILLISECONDS) > cmdArgs.queryWaitTime) {
-            lockTimeOutStats.addFailure(timer.elapsed(TimeUnit.MILLISECONDS));
+            lockTimeOutStats.addFailure(timer.elapsed(TimeUnit.NANOSECONDS));
           } else {
-            lockAcquireStats.addFailure(timer.elapsed(TimeUnit.MILLISECONDS));
+            lockAcquireStats.addFailure(timer.elapsed(TimeUnit.NANOSECONDS));
           }
           continue;
         }
@@ -190,10 +190,10 @@ public class QueueBench extends AbstractBenchmark {
           timer.start();
           rm.release(lease);
           timer.stop();
-          lockReleaseStats.addSuccess(timer.elapsed(TimeUnit.MILLISECONDS));
+          lockReleaseStats.addSuccess(timer.elapsed(TimeUnit.NANOSECONDS));
         } catch (Exception ex) {
           timer.stop();
-          lockReleaseStats.addFailure(timer.elapsed(TimeUnit.MILLISECONDS));
+          lockReleaseStats.addFailure(timer.elapsed(TimeUnit.NANOSECONDS));
         }
 
         final long totalThroughput = (long) (lockAcquireStats.getCurrentThroughput() +
