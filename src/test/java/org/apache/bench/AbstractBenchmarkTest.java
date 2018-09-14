@@ -1,6 +1,7 @@
 package org.apache.bench;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.test.TestingServer;
 import org.junit.After;
 import org.junit.Assert;
@@ -51,11 +52,11 @@ public class AbstractBenchmarkTest {
     }
 
     @Override
-    protected void setup(CuratorFramework client) throws Exception {
+    protected void setup(CuratorFramework client, InterProcessMutex globalInterProcessMutex) throws Exception {
     }
 
     @Override
-    protected void teardown(CuratorFramework client) throws Exception {
+    protected void teardown(CuratorFramework client, InterProcessMutex globalInterProcessMutex) throws Exception {
 
     }
 

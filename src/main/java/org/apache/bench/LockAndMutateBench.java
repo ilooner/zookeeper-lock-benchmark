@@ -23,10 +23,8 @@ public class LockAndMutateBench extends AbstractBenchmark {
 
   public static final String BASE_PATH = "/org/apache/zookeeperbench/" + LockAndMutateBench.NAME;
   public static final String LOCK_PATH = BASE_PATH + "/lock";
-  public static final String CREATE_LOCK_PATH = BASE_PATH + "/bloblock";
   public static final String BLOB_PATH_1 = BASE_PATH + "/blob1";
   public static final String BLOB_PATH_2 = BASE_PATH + "/blob2";
-  public InterProcessMutex mutex;
   public static byte[] blob1Data;
   public static byte[] blob2Data;
 
@@ -35,7 +33,7 @@ public class LockAndMutateBench extends AbstractBenchmark {
   }
 
   @Override
-  protected void setup(CuratorFramework client) throws Exception {
+  protected void setup(CuratorFramework client, InterProcessMutex globalInterProcessMutex) throws Exception {
     int configNodeCount = config.getNodeCount();
     configNodeCount = (configNodeCount == 0) ? DataDefConstants.DEFAULT_NODE_COUNT : configNodeCount;
 
@@ -49,8 +47,7 @@ public class LockAndMutateBench extends AbstractBenchmark {
     blob2.generate();
     blob2Data = blob2.getDataAsByteArray();
 
-    mutex = new InterProcessMutex(client, CREATE_LOCK_PATH);
-    mutex.acquire();
+    globalInterProcessMutex.acquire();
 
     if (client.checkExists().forPath(BLOB_PATH_1) == null) {
       client.create().creatingParentsIfNeeded().forPath(BLOB_PATH_1, blob1Data);
@@ -60,12 +57,12 @@ public class LockAndMutateBench extends AbstractBenchmark {
       client.create().creatingParentsIfNeeded().forPath(BLOB_PATH_2, blob2Data);
     }
 
-    mutex.release();
+    globalInterProcessMutex.release();
   }
 
   @Override
-  protected void teardown(CuratorFramework client) throws Exception {
-    mutex.acquire();
+  protected void teardown(CuratorFramework client, InterProcessMutex globalInterProcessMutex) throws Exception {
+    globalInterProcessMutex.acquire();
     if (client.checkExists().forPath(BLOB_PATH_1) != null) {
       client.delete().deletingChildrenIfNeeded().forPath(BLOB_PATH_1);
     }
@@ -77,7 +74,7 @@ public class LockAndMutateBench extends AbstractBenchmark {
     if (client.checkExists().forPath(LOCK_PATH) != null) {
       client.delete().deletingChildrenIfNeeded().forPath(LOCK_PATH);
     }
-    mutex.release();
+    globalInterProcessMutex.release();
   }
 
   @Override

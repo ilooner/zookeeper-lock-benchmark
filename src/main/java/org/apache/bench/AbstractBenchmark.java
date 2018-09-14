@@ -9,6 +9,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.retry.RetryNTimes;
 
 import java.util.ArrayList;
@@ -21,15 +22,19 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public abstract class AbstractBenchmark implements Benchmark {
+  protected static final String BASE_PATH = "/org/apache/zookeeperbench";
+  protected static final String SETUP_TEARDOWN_LOCK_PATH = BASE_PATH + "/setupTearlock";
+
   protected final CmdArgs config;
+  protected InterProcessMutex setupTearMutex;
 
   public AbstractBenchmark(final CmdArgs config) {
     this.config = Preconditions.checkNotNull(config);
   }
 
-  protected abstract void setup(CuratorFramework client) throws Exception;
+  protected abstract void setup(CuratorFramework client, InterProcessMutex globalInterProcessMutex) throws Exception;
 
-  protected abstract void teardown(CuratorFramework client) throws Exception;
+  protected abstract void teardown(CuratorFramework client, InterProcessMutex globalInterProcessMutex) throws Exception;
 
   protected void printBenchState() {
     // No-Op
@@ -45,7 +50,8 @@ public abstract class AbstractBenchmark implements Benchmark {
 
     try {
       setupClient.start();
-      setup(setupClient);
+      setupTearMutex = new InterProcessMutex(setupClient, SETUP_TEARDOWN_LOCK_PATH);
+      setup(setupClient, setupTearMutex);
     } catch (Exception e) {
       failures.add(new FailureResult("Failure during setup.", Lists.newArrayList(e)));
       if (setupClient != null) {
@@ -130,7 +136,7 @@ public abstract class AbstractBenchmark implements Benchmark {
       //teardownClient.start();
       //teardown(teardownClient);
       Thread.sleep(10000);
-      teardown(setupClient);
+      teardown(setupClient, setupTearMutex);
     } catch (Exception e) {
       failures.add(new FailureResult("Failure during teardown.", Lists.newArrayList(e)));
     } finally {

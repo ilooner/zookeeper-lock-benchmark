@@ -1,6 +1,7 @@
 package org.apache.bench;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 
 import java.util.List;
 
@@ -12,12 +13,12 @@ public class QueueLockAndMutateBench extends AbstractBenchmark {
   }
 
   @Override
-  protected void setup(CuratorFramework client) throws Exception {
+  protected void setup(CuratorFramework client, InterProcessMutex globalInterProcessMutex) throws Exception {
 
   }
 
   @Override
-  protected void teardown(CuratorFramework client) throws Exception {
+  protected void teardown(CuratorFramework client, InterProcessMutex globalInterProcessMutex) throws Exception {
 
   }
 

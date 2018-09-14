@@ -24,6 +24,7 @@ import org.apache.bench.ZKBlobDataGen.NodeFreeUsedResourceData;
 import org.apache.bench.ZKBlobDataGen.NodeQueryClusterUtilization;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -48,7 +49,7 @@ public class TransactionBenchmark extends AbstractBenchmark {
   }
 
   @Override
-  protected void setup(CuratorFramework client) throws Exception {
+  protected void setup(CuratorFramework client, InterProcessMutex globalInterProcessMutex) throws Exception {
     int configNodeCount = config.getNodeCount();
     configNodeCount = (configNodeCount == 0) ? DataDefConstants.DEFAULT_NODE_COUNT : configNodeCount;
 
@@ -62,6 +63,7 @@ public class TransactionBenchmark extends AbstractBenchmark {
     blob2.generate();
     blob2Data = blob2.getDataAsByteArray();
 
+    globalInterProcessMutex.acquire();
     if (client.checkExists().forPath(BLOB_PATH_1) == null) {
       client.create().creatingParentsIfNeeded().forPath(BLOB_PATH_1, blob1Data);
     }
@@ -69,10 +71,12 @@ public class TransactionBenchmark extends AbstractBenchmark {
     if (client.checkExists().forPath(BLOB_PATH_2) == null) {
       client.create().creatingParentsIfNeeded().forPath(BLOB_PATH_2, blob2Data);
     }
+    globalInterProcessMutex.release();
   }
 
   @Override
-  protected void teardown(CuratorFramework client) throws Exception {
+  protected void teardown(CuratorFramework client, InterProcessMutex globalInterProcessMutex) throws Exception {
+    globalInterProcessMutex.acquire();
     if (client.checkExists().forPath(BLOB_PATH_1) != null) {
       client.delete().forPath(BLOB_PATH_1);
     }
@@ -80,6 +84,7 @@ public class TransactionBenchmark extends AbstractBenchmark {
     if (client.checkExists().forPath(BLOB_PATH_2) != null) {
       client.delete().forPath(BLOB_PATH_2);
     }
+    globalInterProcessMutex.release();
   }
 
   @Override

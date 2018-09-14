@@ -20,11 +20,8 @@ public class QueueBench extends AbstractBenchmark {
   public static final String ACQUIRE_TASK_NAME = "LockAcquireTasks";
   public static final String RELEASE_TASK_NAME = "LockReleaseTasks";
   public static final String TASK_TIMEOUT_NAME = "TimeoutTasks";
-  public static final String BASE_PATH = "/org/apache/zookeeperbench";
-  public static final String CREATE_LOCK_PATH = BASE_PATH + "/globallock";
 
   private ResourceManager rm;
-  public InterProcessMutex mutex;
 
   public static class ResourceManager {
     private final Map<String, DistributedQueue> queues;
@@ -110,12 +107,12 @@ public class QueueBench extends AbstractBenchmark {
   }
 
   @Override
-  protected void setup(CuratorFramework client) throws Exception {
+  protected void setup(CuratorFramework client, InterProcessMutex globalInterProcessMutex) throws Exception {
     Map<String, DistributedQueue> queues = new HashMap<>();
     Map<Integer, String> costToQueueMap = new HashMap<>();
     double equalDist = 1/this.config.queueCount;
-    mutex = new InterProcessMutex(client, CREATE_LOCK_PATH);
-    mutex.acquire();
+
+    globalInterProcessMutex.acquire();
     for (int i=0;i<this.config.queueCount;i++) {
       String qname = NAME + i;
       queues.put(qname, new DistributedQueue(qname, (long)(CLUSTER_CPU * equalDist),
@@ -131,7 +128,7 @@ public class QueueBench extends AbstractBenchmark {
         return lease;
       }
     }, costToQueueMap);
-    mutex.release();
+    globalInterProcessMutex.release();
   }
 
   public static class Factory implements Benchmark.Factory<QueueBench> {
@@ -142,10 +139,10 @@ public class QueueBench extends AbstractBenchmark {
   }
 
   @Override
-  protected void teardown(CuratorFramework client) throws Exception {
-    mutex.acquire();
+  protected void teardown(CuratorFramework client, InterProcessMutex globalInterProcessMutex) throws Exception {
+    globalInterProcessMutex.acquire();
     this.rm.close(client);
-    mutex.release();
+    globalInterProcessMutex.release();
   }
 
   @Override
