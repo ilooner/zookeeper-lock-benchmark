@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
-import os,sys,csv
+import os,sys,csv,re
 
 def aggregate_finder(file):
     fl = open(file, 'r')
     for line in fl:
-        if line.startswith('Aggregated'):
-             yield line
+        if 'Results-Aggregated' in line:
+             yield re.sub('^.*Results-Aggregated-', '', line)
 
 def clean(x):
     if x.endswith("\r\n"): return x[:-2]
@@ -22,7 +22,7 @@ def write(file, dictionary):
     with open(file, 'w') as target:
         writer=csv.writer(target, delimiter='\n', quoting = csv.QUOTE_NONE,escapechar='\\')
         for key, value in d.iteritems():
-            writer.writerow([key.replace('Aggregated-','')])
+            writer.writerow([key.replace('^.*Results-Aggregated-','')])
             writer.writerow(value)
     
 
