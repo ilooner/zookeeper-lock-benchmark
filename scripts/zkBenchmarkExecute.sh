@@ -183,6 +183,7 @@ while [ $iterationNum -lt $numIter ]; do
    logFileName="$testLogDir/$testName"
    logFileName="$logFileName"\-"$iterationNum"
    clush -g $clushGroup "$remoteDestPath/zookeeper-bench-1.0-SNAPSHOT/bin/bench.sh $benchArgs" > $logFileName
+   echo "TestName: $testName" >> $logFileName
    echo "Sleeping for $sTime seconds"
    sleep $sTime
    let iterationNum=iterationNum+1
