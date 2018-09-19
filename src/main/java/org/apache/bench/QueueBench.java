@@ -64,8 +64,10 @@ public class QueueBench extends AbstractBenchmark {
     }
 
     public Query buildQuery() {
-      int qExecTime = r.nextInt((args.maxQueryExecTime - args.minQueryExecTime) + 1) + args.minQueryExecTime;
-      int qCost = r.nextInt((args.maxQueryCost - args.minQueryCost) + 1) + args.minQueryCost;
+      int qExecTime = (args.maxQueryExecTime - args.minQueryExecTime) == 0 ? 0 :
+              r.nextInt(args.maxQueryExecTime - args.minQueryExecTime) + args.minQueryExecTime;
+      int qCost = (args.maxQueryCost - args.minQueryCost) == 0 ? 0 :
+              r.nextInt(args.maxQueryCost - args.minQueryCost) + args.minQueryCost;
       return new Query(Integer.toString(taskID) + Integer.toString(qNo++), qCost, qExecTime);
     }
 
