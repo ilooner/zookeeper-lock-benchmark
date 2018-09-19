@@ -13,6 +13,12 @@ def clean(x):
     if x.endswith("\n") or x.endswith("\r"): return x[:-1]
     return x
 
+def get_test_name(file):
+    fl = open(file, 'r')
+    for line in fl:
+        if 'TestName' in line:
+            return line.replace('^.*TestName','TestName').split(':')
+
 def get_all_files_in_dir(path):
     for root, dirs, files in os.walk(path):
         for file_ in files:
@@ -34,12 +40,13 @@ if not os.path.isdir(sys.argv[1]):
    print "Provided input is not a directory!!!"
    sys.exit()
 
+d = dict()
 for f in get_all_files_in_dir(sys.argv[1]):
-   d = dict()
+   (test, testname) = get_test_name(f)
    for line in aggregate_finder(f):
        (key, value) = line.split(':')
        if key in d:
-           d[key].append(clean(value))
+           d[key].append(clean(testname) + ':' + clean(value))
        else:
-           d[key] = [clean(value)]
-   write(f+'.results', d)
+           d[key] = [clean(testname) + ':' + clean(value)]
+write(sys.argv[1]+'/final-results', d)
