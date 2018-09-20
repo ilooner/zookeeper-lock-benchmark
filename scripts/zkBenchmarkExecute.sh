@@ -11,14 +11,17 @@ logDir=""
 benchArgs=""
 clushGroup=""
 cleanup=false
+nodePrefix=""
+nodeStart=""
+nodeEnd=""
 
 # list of nodes to run test on
 nodes=""
 
 #Build the repo if needed
-script_usage="usage: $0 [--build] [--clushGroup <clush group of nodes>] [--nodes <nodes for experiment>] [--srcPath <srcRepoPath>] [--tarPath <location of tarball>] [--destPath <location to copy tarball on remote nodes>] [--numIter <number of iterations> --sTime <sleep time in seconds between iterations>] [--testName <Name of test to run>] [--logDir <location of log dir>] [--benchArgs <arguments to pass to benchmark test>]"
+script_usage="usage: $0 [--build] [--clushGroup <clush group of nodes>] [--nodePrefix <first 3 octets of node ips>] [--nodeStart <starting 4th octet or ip>] [--nodeEnd <ending 4th octet of ip>] [--nodes <nodes for experiment>] [--srcPath <srcRepoPath>] [--tarPath <location of tarball>] [--destPath <location to copy tarball on remote nodes>] [--numIter <number of iterations> --sTime <sleep time in seconds between iterations>] [--testName <Name of test to run>] [--logDir <location of log dir>] [--benchArgs <arguments to pass to benchmark test>]"
 if [ ${#} -ge 1 ] ; then
-    OPTS=`getopt -a -o h -l build -l clushGroup: -l nodes: -l srcPath: -l tarPath: -l destPath: -l numIter: -l sTime: -l testName: -l logDir: -l benchArgs: -- "$@"`
+    OPTS=`getopt -a -o h -l build -l clushGroup: -l nodes: -l nodePrefix: -l nodeStart: -l nodeEnd: -l srcPath: -l tarPath: -l destPath: -l numIter: -l sTime: -l testName: -l logDir: -l benchArgs: -- "$@"`
     if [ $? != 0 ] ; then
         echo ${script_usage}
         exit 2
@@ -41,6 +44,21 @@ if [ ${#} -ge 1 ] ; then
 		nodes=$1
 		shift 1
 		;;
+            --nodePrefix)
+                shift 1
+                nodePrefix=$1
+                shift 1
+                ;;
+            --nodeStart)
+                shift 1
+                nodeStart=$1
+                shift 1
+                ;;
+            --nodeEnd)
+                shift 1
+                nodeEnd=$1
+                shift 1
+                ;; 
             --srcPath)
                 shift 1
                 codeSrcPath=$1
@@ -133,7 +151,22 @@ if [ -z "$tarballPath" ]; then
 fi
    
 nodes=`echo $nodes | tr ',' ' '`
-if [ -z "$nodes" ]; then;
+if [ -z "$nodes" ]; then
+   if [ -z "$nodePrefix" ] || [ -z "$nodeStart" ] || [ -z "$nodeEnd" ]; then
+     echo "Nodes for running tests were not provided"
+     exit 1
+   fi
+   for ((i=$nodeStart; i<=$nodeEnd; i++))
+   do
+     if [ $i -eq $nodeStart ]; then
+        nodes=$nodePrefix".${i}"
+     else
+        nodes="${nodes},${nodePrefix}.${i}"
+     fi 
+   done
+fi
+
+if [ -z "$nodes" ]; then
    echo "Nodes for running tests were not provided"
    exit 1
 fi
