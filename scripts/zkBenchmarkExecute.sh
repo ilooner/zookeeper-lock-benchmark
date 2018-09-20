@@ -150,7 +150,6 @@ if [ -z "$tarballPath" ]; then
    exit 1
 fi
    
-nodes=`echo $nodes | tr ',' ' '`
 if [ -z "$nodes" ]; then
    if [ -z "$nodePrefix" ] || [ -z "$nodeStart" ] || [ -z "$nodeEnd" ]; then
      echo "Nodes for running tests were not provided"
@@ -166,6 +165,7 @@ if [ -z "$nodes" ]; then
    done
 fi
 
+nodes=`echo $nodes | tr ',' ' '`
 if [ -z "$nodes" ]; then
    echo "Nodes for running tests were not provided"
    exit 1
