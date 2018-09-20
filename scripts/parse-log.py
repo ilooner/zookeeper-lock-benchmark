@@ -67,7 +67,7 @@ testnamedict = dict()
 for key, value in d.iteritems():
     results = [x.split(',') for x in value]
     for item in results:
-        if item[0] in testnamedict:
+        if key+item[0] in testnamedict:
             testnamedict[key+item[0]].append(item)
         else:
             testnamedict[key+item[0]] = [item]
