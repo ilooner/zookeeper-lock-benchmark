@@ -171,6 +171,10 @@ if [ -z "$nodes" ]; then
    exit 1
 fi
 
+# Delete the remoteDestPath and then create it to get clean directory
+clush -g $clushGroup "rm -rf $remoteDestPath"
+clush -g $clushGroup "mkdir $remoteDestPath" 
+
 #Tarball path is available so copy this tarball to all node
 for node in ${nodes[*]}
 do
