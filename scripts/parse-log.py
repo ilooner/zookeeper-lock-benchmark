@@ -35,7 +35,6 @@ def writefinal(file, dictionary):
     with open(file, 'w') as target:
         writer=csv.writer(target, delimiter=',', quoting = csv.QUOTE_NONE,escapechar='\\')
         for key, value in dictionary.iteritems():
-            print value
             writer.writerow(value)
 
 if len(sys.argv) > 2 or len(sys.argv) <= 1:
